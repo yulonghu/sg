@@ -60,7 +60,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 | ------ | ------ |
 |$_GET['key']|sg::get('g.key')|
 |$_POST['key']|sg::get('p.key')|
-|$_COOKIE['key']|sg::get('g.key')|
+|$_COOKIE['key']|sg::get('c.key')|
 |$_SERVER['key']|sg::get('s.key')|
 |$_FILES['key']|sg::get('f.key')|
 
