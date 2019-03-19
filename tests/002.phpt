@@ -6,9 +6,6 @@ Check for Sg
 sg.enable = 1
 --FILE--
 <?php
-
-ini_set('sg.enable', 1);
-
 $key = 'test';
 $val = 'A apple';
 

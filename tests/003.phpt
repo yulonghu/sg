@@ -6,9 +6,6 @@ Check for Sg string key
 sg.enable = 1
 --FILE--
 <?php
-
-ini_set('sg.enable', 1);
-
 $key = 'user.list.product';
 $val = 'A apple';
 

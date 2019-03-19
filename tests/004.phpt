@@ -6,9 +6,6 @@ Check for Sg Index array
 sg.enable = 1
 --FILE--
 <?php
-
-ini_set('sg.enable', 1);
-
 $key_one = 'user.0.0';
 $val_one = 'A apple';
 

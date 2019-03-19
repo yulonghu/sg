@@ -6,9 +6,6 @@ Check for Sg::del
 sg.enable = 1
 --FILE--
 <?php
-
-ini_set('sg.enable', 1);
-
 $key_one = 'user.1.2.3.0';
 $val_one = 'A apple';
 
