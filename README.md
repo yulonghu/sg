@@ -6,6 +6,7 @@ A Simple PHP Superglobals Management
 ### Introduction
 
 SG is the same as PHP [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), Management global variables are $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES, User-defined global variables.
+Use SG can save a lot of PHP code.
 
 ### Features
 - Simple, Fast, Lightweight
