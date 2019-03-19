@@ -57,13 +57,21 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 
 ### PHP Superglobals
 
-|OLD GET METHOD|NEW GET METHOD|
+|OLD GET METHOD (Short)|NEW GET METHOD|
 | ------ | ------ |
 |$_GET['key']|sg::get('g.key')|
 |$_POST['key']|sg::get('p.key')|
 |$_COOKIE['key']|sg::get('c.key')|
 |$_SERVER['key']|sg::get('s.key')|
 |$_FILES['key']|sg::get('f.key')|
+
+|OLD GET METHOD (Long)|NEW GET METHOD|
+| ------ | ------ |
+|$_GET['key']['key1']['key2']|sg::get('g.key.key1.key2')|
+|$_POST['key']['key1']['key2']|sg::get('p.key.key1.key2')|
+|$_COOKIE['key']['key1']['key2']|sg::get('c.key.key1.key2')|
+|$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
+|$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
 
 ### User-defined global variables
 
