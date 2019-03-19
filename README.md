@@ -90,6 +90,7 @@ bool(true)
 var_dump(sg::get('test', 'test apple'));
 var_dump(sg::get('user');
 var_dump(sg::get('not_found', 'def');
+var_dump(sg::get('user.1.2.3.4'));
 ```
 The above example will output:
 ```txt
@@ -111,6 +112,7 @@ array(2) {
   }
 }
 string(3) "def"
+NULL
 ```
 #### sg::has
 ```php
