@@ -1,6 +1,6 @@
 /*
   +----------------------------------------------------------------------+
-  | GPCSF - $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES                  |
+  | SG - A Simple PHP Superglobals Management                            |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
