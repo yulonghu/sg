@@ -55,7 +55,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 ## Example
 
-### PHP Superglobals
+### Get PHP Superglobals
 
 |OLD GET METHOD (Short)|NEW GET METHOD|
 | ------ | ------ |
@@ -73,7 +73,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
 |$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
 
-### User-defined global variables
+### Get User-defined global variables
 
 #### sg::set
 ```php
@@ -159,6 +159,25 @@ array(2) {
     string(12) "user b apple"
   }
 }
+```
+
+### sg.auto_trim
+
+```php
+<?php
+// sg.auto_trim = On ; php.ini
+ini_set('sg.auto_trim', 1);
+function One() {
+    var_dump(sg::set('test', ' test apple ')); // Auto-call PHP trim
+}
+function Two() {
+    var_dump(sg::get('test'));
+}
+```
+The above example will output:
+```txt
+bool(true)
+string(10) "test apple"
 ```
 
 ## License
