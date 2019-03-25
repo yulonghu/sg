@@ -63,72 +63,72 @@ static zval *sg_strtok_get(zend_string *key) /* {{{ */
 	zval *pzval = NULL;
 	HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 
-    if (zend_memrchr(ZSTR_VAL(key), '.', ZSTR_LEN(key))) {
-        char *seg = NULL, *entry = NULL, *ptr = NULL;
+	if (zend_memrchr(ZSTR_VAL(key), '.', ZSTR_LEN(key))) {
+		char *seg = NULL, *entry = NULL, *ptr = NULL;
 
-        entry = estrndup(ZSTR_VAL(key), ZSTR_LEN(key));
-        if ((seg = php_strtok_r(entry, ".", &ptr))) {
-            do {
-                if (ht == NULL || (pzval = zend_symtable_str_find(ht, seg, strlen(seg))) == NULL) {
-                    efree(entry);
-                    return NULL;
-                }
-                if (Z_TYPE_P(pzval) == IS_ARRAY) {
-                    ht = Z_ARRVAL_P(pzval);
-                } else {
-                    ht = NULL;
-                }
-            } while ((seg = php_strtok_r(NULL, ".", &ptr)));
-        }
-        efree(entry);
-    } else {
-        pzval = zend_symtable_find(ht, key);
-    }
+		entry = estrndup(ZSTR_VAL(key), ZSTR_LEN(key));
+		if ((seg = php_strtok_r(entry, ".", &ptr))) {
+			do {
+				if (ht == NULL || (pzval = zend_symtable_str_find(ht, seg, strlen(seg))) == NULL) {
+					efree(entry);
+					return NULL;
+				}
+				if (Z_TYPE_P(pzval) == IS_ARRAY) {
+					ht = Z_ARRVAL_P(pzval);
+				} else {
+					ht = NULL;
+				}
+			} while ((seg = php_strtok_r(NULL, ".", &ptr)));
+		}
+		efree(entry);
+	} else {
+		pzval = zend_symtable_find(ht, key);
+	}
 
-    return pzval;
+	return pzval;
 }
 /* }}} */
 
 static zval *sg_strtok_set(zend_string *key, zval *value) /* {{{ */
 {
-    zval *pzval = NULL;
+	zval *pzval = NULL;
 	HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 
-    if (zend_memrchr(ZSTR_VAL(key), '.', ZSTR_LEN(key))) {
-        char *seg = NULL, *entry = NULL, *ptr = NULL;
-        zval zarr;
+	if (zend_memrchr(ZSTR_VAL(key), '.', ZSTR_LEN(key))) {
+		char *seg = NULL, *entry = NULL, *ptr = NULL;
+		zval zarr;
 
-        entry = estrndup(ZSTR_VAL(key), ZSTR_LEN(key));
-        if ((seg = php_strtok_r(entry, ".", &ptr))) {
-            do {
+		entry = estrndup(ZSTR_VAL(key), ZSTR_LEN(key));
+		if ((seg = php_strtok_r(entry, ".", &ptr))) {
+			do {
 				if (strlen(ptr) < 1) {
 					pzval = zend_symtable_str_update(ht, seg, strlen(seg), value);
 					break;
 				}
-                pzval = zend_symtable_str_find(ht, seg, strlen(seg));
+				pzval = zend_symtable_str_find(ht, seg, strlen(seg));
 				if (!pzval || Z_TYPE_P(pzval) != IS_ARRAY) {
 					array_init(&zarr);
 					zend_symtable_str_update(ht, seg, strlen(seg), &zarr);
 					pzval = &zarr;
 				}
 
-                ht = Z_ARRVAL_P(pzval);
-                seg = php_strtok_r(NULL, ".", &ptr);
-            } while (seg);
-            efree(entry);
-        }
-    } else {
-        pzval = zend_symtable_update(ht, key, value);
-    }
+				ht = Z_ARRVAL_P(pzval);
+				seg = php_strtok_r(NULL, ".", &ptr);
+			} while (seg);
+			efree(entry);
+		}
+	} else {
+		pzval = zend_symtable_update(ht, key, value);
+	}
 
-    Z_TRY_ADDREF_P(value);
+	Z_TRY_ADDREF_P(value);
 
 	return pzval;
 }/*}}}*/
 
 static int sg_strtok_del(zend_string *key) /* {{{ */
 {
-    zval *pzval = NULL;
+	zval *pzval = NULL;
 	HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 	int ret = FAILURE;
 
@@ -170,7 +170,7 @@ PHP_METHOD(sg, get)
 		Z_PARAM_STR(key)
 		Z_PARAM_OPTIONAL
 		Z_PARAM_ZVAL(default_value)
-	ZEND_PARSE_PARAMETERS_END();
+		ZEND_PARSE_PARAMETERS_END();
 
 	pzval = sg_strtok_get(key);
 
@@ -203,7 +203,7 @@ PHP_METHOD(sg, set)
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 		Z_PARAM_STR(key)
 		Z_PARAM_ZVAL(value)
-	ZEND_PARSE_PARAMETERS_END();
+		ZEND_PARSE_PARAMETERS_END();
 
 	if (sg_strtok_set(key, value)) {
 		RETURN_TRUE;
@@ -217,12 +217,12 @@ PHP_METHOD(sg, set)
 PHP_METHOD(sg, has)
 {
 	zend_string *key = NULL;
-	
+
 	CHECK_SG_ENABLE();
 
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_STR(key)
-	ZEND_PARSE_PARAMETERS_END();
+		ZEND_PARSE_PARAMETERS_END();
 
 	if (sg_strtok_get(key) != NULL) {
 		RETURN_TRUE;
@@ -241,7 +241,7 @@ PHP_METHOD(sg, del)
 
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_STR(key)
-	ZEND_PARSE_PARAMETERS_END();
+		ZEND_PARSE_PARAMETERS_END();
 
 	if (sg_strtok_del(key) == SUCCESS) {
 		RETURN_TRUE;
@@ -262,10 +262,10 @@ const zend_function_entry sg_methods[] = {
 /* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION
- */
+*/
 PHP_MINIT_FUNCTION(sg)
 {
-    ZEND_INIT_MODULE_GLOBALS(sg, php_sg_init_globals, NULL);
+	ZEND_INIT_MODULE_GLOBALS(sg, php_sg_init_globals, NULL);
 
 	REGISTER_INI_ENTRIES();
 
@@ -283,7 +283,7 @@ PHP_MINIT_FUNCTION(sg)
 /* }}} */
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
- */
+*/
 PHP_MSHUTDOWN_FUNCTION(sg)
 {
 	UNREGISTER_INI_ENTRIES();
@@ -292,7 +292,7 @@ PHP_MSHUTDOWN_FUNCTION(sg)
 /* }}} */
 
 /* {{{ PHP_RINIT_FUNCTION
- */
+*/
 PHP_RINIT_FUNCTION(sg)
 {
 #if defined(COMPILE_DL_SG) && defined(ZTS)
@@ -334,7 +334,7 @@ PHP_RINIT_FUNCTION(sg)
 /* }}} */
 
 /* {{{ PHP_RSHUTDOWN_FUNCTION
- */
+*/
 PHP_RSHUTDOWN_FUNCTION(sg)
 {
 	if (SG_G(enable)) {
@@ -347,7 +347,7 @@ PHP_RSHUTDOWN_FUNCTION(sg)
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
- */
+*/
 PHP_MINFO_FUNCTION(sg)
 {
 	php_info_print_table_start();
