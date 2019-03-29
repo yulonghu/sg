@@ -1,38 +1,41 @@
 # SG - PHP Superglobals Management
 [![Build Status](https://travis-ci.org/yulonghu/sg.svg?branch=master)](https://travis-ci.org/yulonghu/sg)
 
-A Simple PHP Superglobals Management
+一个超级简单的PHP超全局变量管理扩展
 
-[中文文档](https://github.com/yulonghu/sg/blob/master/README_ZH.md)
+[English Document](https://github.com/yulonghu/sg/blob/master/README.md)
 
-### Introduction
+### 介绍
 
-SG is the same as PHP [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), Management global variables are $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES, User-defined global variables.
-Use SG can save a lot of PHP code.
+SG 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，它的诞生为了方便快捷操作PHP预定义的超全局变量，用户定义的超全局变量。
 
-### Features
-- Simple, Fast, Lightweight
-- Access global variable zero-copy
-- Strip whitespace with [PHP trim](http://php.net/manual/en/function.trim.php)
-- Solve problems with PHP undefined series (Undefined variable, Undefined offset)
+如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括$_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES。
 
-## Install
-### Requirements
+使用SG类，可以大大的减少我们的PHP代码量，提高我们的开发效率。
+
+### 亮点功能
+- 简单，快速，轻量
+- 零拷贝访问全局变量
+- 支持自动过滤前后空格[PHP trim](http://php.net/manual/en/function.trim.php)
+- 解决操作PHP全局变量时出现未定义系列的问题 (Undefined variable, Undefined offset)
+
+## 安装
+### PHP版本最低要求
 - PHP 5.4 +
 
-### DownLoad
+### 下载源码
 ```
 git clone https://github.com/yulonghu/sg.git
 ```
 
-### Compile SG in Linux
+### 在Linux系统中编译PHP SG扩展
 ```
 $ /path/to/php/bin/phpize
 $ ./configure --with-php-config=/path/to/php/bin/php-config
 $ make && make install
 ```
 
-#### Add the follow information to your php.ini
+#### php.ini，添加、开启扩展
 ```ini
 extension=sg.so
 
@@ -40,9 +43,9 @@ extension=sg.so
 sg.enable = On
 ```
 
-Restart the web server
+重启php-fpm，就安装成功啦。
 
-## Methods
+## 提供的方法
 ```php
 mixed sg::get(string $key [, mixed $default_value = null])
 bool sg::set(string $key, mixed $value)
@@ -50,14 +53,14 @@ bool sg::has(string $key)
 bool sg::del(string $key)
 ```
 
-## Inis
+## 支持的INI配置项
 ```ini
 sg.enable = On/Off
 sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
-## Example
+## 详细例子
 
-### Get PHP Superglobals
+### 获取PHP预定义的超全局变量
 
 |OLD GET METHOD (Short)|NEW GET METHOD|
 | ------ | ------ |
@@ -75,7 +78,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
 |$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
 
-### Get User-defined global variables
+### 设置超全局变量
 
 #### sg::set
 ```php
@@ -86,7 +89,7 @@ var_dump(sg::set('user.0.1', 'user 1 apple'));
 var_dump(sg::set('user.a.a', 'user a apple'));
 var_dump(sg::set('user.a.b', 'user b apple'));
 ```
-The above example will output:
+以上例子输出的结果:
 ```txt
 bool(true)
 bool(true)
@@ -103,7 +106,7 @@ var_dump(sg::get('user');
 var_dump(sg::get('not_found', 'def');
 var_dump(sg::get('user.1.2.3.4'));
 ```
-The above example will output:
+以上例子输出的结果:
 ```txt
 string(10) "test apple"
 array(2) {
@@ -131,7 +134,7 @@ NULL
 var_dump(sg::has('test'));
 var_dump(sg::has('not_found'));
 ```
-The above example will output:
+以上例子输出的结果:
 ```
 bool(true)
 bool(false)
@@ -143,7 +146,7 @@ var_dump(sg::del('test'));
 var_dump(sg::del('user.0.1'));
 var_dump(sg::get('user');
 ```
-The above example will output:
+以上例子输出的结果:
 ```
 bool(true)
 bool(true)
@@ -165,6 +168,8 @@ array(2) {
 
 ### sg.auto_trim
 
+演示自动过滤前后空格的例子, 两种方式开启自动过滤。
+
 ```php
 <?php
 // sg.auto_trim = On ; php.ini
@@ -176,7 +181,7 @@ function Two() {
     var_dump(sg::get('test'));
 }
 ```
-The above example will output:
+以上例子输出的结果:
 ```txt
 bool(true)
 string(10) "test apple"
