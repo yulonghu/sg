@@ -39,6 +39,7 @@ echo "------------------trim\n";
 $val = 'hello ';
 sg::set($key, ' trim_' . $val);
 var_dump(sg::get($key));
+var_dump(sg::get($key));
 
 unset($name);
 
@@ -64,5 +65,6 @@ NULL
 string(3) "def"
 bool(false)
 ------------------trim
+string(10) "trim_hello"
 string(10) "trim_hello"
 

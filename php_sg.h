@@ -45,7 +45,13 @@ extern zend_module_entry sg_module_entry;
 
 ZEND_BEGIN_MODULE_GLOBALS(sg)
 	zend_bool auto_trim;
+
+#if PHP_VERSION_ID >= 70000
 	zval http_globals;
+#else
+    zval *http_globals;
+#endif
+
 	zend_bool enable;
 	zend_bool cli;
 ZEND_END_MODULE_GLOBALS(sg)

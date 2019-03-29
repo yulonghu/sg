@@ -21,7 +21,7 @@ var_dump(sg::get('user'));
 
 
 echo "------------------set_other\n";
-var_dump(sg::set('c.d.e', ['d' => 1]));
+var_dump(sg::set('c.d.e', array('d' => 1)));
 var_dump(sg::set('c.d.e.f', 2));
 
 echo "------------------get_other\n";
