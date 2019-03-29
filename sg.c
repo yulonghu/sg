@@ -33,7 +33,7 @@ ZEND_DECLARE_MODULE_GLOBALS(sg)
 #define CHECK_SG_ENABLE() /* {{{ */ \
 {\
     if (!SG_G(enable)) { \
-        php_error_docref(NULL, E_WARNING, "Please set sg.enable = 1 in php.ini"); \
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Please set sg.enable = 1 in php.ini"); \
         RETURN_FALSE; \
     } \
 }/* }}} */ \
@@ -584,13 +584,6 @@ zend_module_entry sg_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
-
-#ifdef COMPILE_DL_SG
-#ifdef ZTS
-ZEND_TSRMLS_CACHE_DEFINE()
-#endif
-ZEND_GET_MODULE(sg)
-#endif
 
 /*
  * Local variables:

@@ -22,7 +22,7 @@
 extern zend_module_entry sg_module_entry;
 #define phpext_sg_ptr &sg_module_entry
 
-#define PHP_SG_VERSION "0.1.0"
+#define PHP_SG_VERSION "1.0.0"
 #define PHP_SG_AUTHOR  "Jiapeng Fan"
 
 #ifdef PHP_WIN32
@@ -35,12 +35,6 @@ extern zend_module_entry sg_module_entry;
 
 #ifdef ZTS
 #include "TSRM.h"
-#endif
-
-#ifdef ZTS
-#define SG_G(v) TSRMG(sg_globals_id, zend_sg_globals *, v) 
-#else
-#define SG_G(v) (sg_globals.v)
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(sg)
@@ -56,11 +50,13 @@ ZEND_BEGIN_MODULE_GLOBALS(sg)
 	zend_bool cli;
 ZEND_END_MODULE_GLOBALS(sg)
 
-#if defined(ZTS) && defined(COMPILE_DL_SG)
-ZEND_TSRMLS_CACHE_EXTERN()
-#endif
-
 extern ZEND_DECLARE_MODULE_GLOBALS(sg);
+
+#ifdef ZTS
+#define SG_G(v) TSRMG(sg_globals_id, zend_sg_globals *, v) 
+#else
+#define SG_G(v) (sg_globals.v)
+#endif
 
 #endif	/* PHP_SG_H */
 
