@@ -6,5 +6,5 @@ Make sure that the comment is aligned:
 [  --enable-sg           Enable sg support])
 
 if test "$PHP_SG" != "no"; then
-  PHP_NEW_EXTENSION(sg, sg.c, $ext_shared,, -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1)
+  PHP_NEW_EXTENSION(sg, sg.c, $ext_shared)
 fi
