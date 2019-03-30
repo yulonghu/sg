@@ -470,10 +470,6 @@ PHP_MSHUTDOWN_FUNCTION(sg)
  */
 PHP_RINIT_FUNCTION(sg)
 {
-#if PHP_VERSION_ID >= 70000 && defined(ZTS) && defined(COMPILE_DL_SG)
-    ZEND_TSRMLS_CACHE_UPDATE();
-#endif
-
     if (SG_G(enable)) {
 #if PHP_VERSION_ID >= 70000
         array_init(&SG_G(http_globals));
@@ -584,10 +580,6 @@ zend_module_entry sg_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
-
-#if PHP_VERSION_ID >= 70000 && defined(ZTS) && defined(COMPILE_DL_SG)
-ZEND_TSRMLS_CACHE_DEFINE()
-#endif
 
 #ifdef COMPILE_DL_SG
 ZEND_GET_MODULE(sg)

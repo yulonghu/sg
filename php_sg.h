@@ -58,10 +58,6 @@ extern ZEND_DECLARE_MODULE_GLOBALS(sg);
 #define SG_G(v) (sg_globals.v)
 #endif
 
-#if PHP_VERSION_ID >= 70000 && defined(ZTS) && defined(COMPILE_DL_SG)
-ZEND_TSRMLS_CACHE_EXTERN()
-#endif
-
 #endif	/* PHP_SG_H */
 
 /*
