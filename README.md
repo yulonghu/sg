@@ -7,8 +7,11 @@ A Simple PHP Superglobals Management
 
 ### Introduction
 
-SG is the same as PHP [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), Management global variables are $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES, User-defined global variables.
-Use SG can save a lot of PHP code.
+SG Full name [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), It is very easy to management PHP predefined Superglobals variables and User-defined Superglobals variables.
+
+If in non CLI mode, SG default registration Superglobals include $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES.
+
+Use SG can save a lot of PHP code, Improve development efficiency.
 
 ### Features
 - Simple, Fast, Lightweight
@@ -17,8 +20,9 @@ Use SG can save a lot of PHP code.
 - Solve problems with PHP undefined series (Undefined variable, Undefined offset)
 
 ## Install
-### Requirements
+### Supported Version
 - PHP 5.4 +
+- PHP 7.0 +
 
 ### DownLoad
 ```
@@ -40,7 +44,7 @@ extension=sg.so
 sg.enable = On
 ```
 
-Restart the web server
+Restart the php-fpm.
 
 ## Methods
 ```php
@@ -57,7 +61,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 ## Example
 
-### Get PHP Superglobals
+### Get PHP Predefined Superglobals variable
 
 |OLD GET METHOD (Short)|NEW GET METHOD|
 | ------ | ------ |
@@ -75,9 +79,9 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
 |$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
 
-### Get User-defined global variables
+### Get User-defined Superglobal variables
 
-#### sg::set
+#### bool sg::set(string $key, mixed $value)
 ```php
 <?php
 var_dump(sg::set('test', 'test apple'));
@@ -95,7 +99,7 @@ bool(true)
 bool(true)
 ```
 
-#### sg::get
+#### mixed sg::get(string $key [, mixed $default_value = null])
 ```php
 <?php
 var_dump(sg::get('test', 'test apple'));
@@ -125,7 +129,8 @@ array(2) {
 string(3) "def"
 NULL
 ```
-#### sg::has
+
+#### bool sg::has(string $key)
 ```php
 <?php
 var_dump(sg::has('test'));
@@ -136,7 +141,8 @@ The above example will output:
 bool(true)
 bool(false)
 ```
-#### sg::del
+
+#### bool sg::del(string $key)
 ```php
 <?php
 var_dump(sg::del('test'));

@@ -470,10 +470,6 @@ PHP_MSHUTDOWN_FUNCTION(sg)
  */
 PHP_RINIT_FUNCTION(sg)
 {
-#if defined(COMPILE_DL_SG) && defined(ZTS)
-    ZEND_TSRMLS_CACHE_UPDATE();
-#endif
-
     if (SG_G(enable)) {
 #if PHP_VERSION_ID >= 70000
         array_init(&SG_G(http_globals));
@@ -584,6 +580,10 @@ zend_module_entry sg_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
+
+#ifdef COMPILE_DL_SG
+ZEND_GET_MODULE(sg)
+#endif
 
 /*
  * Local variables:

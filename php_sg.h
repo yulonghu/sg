@@ -26,11 +26,11 @@ extern zend_module_entry sg_module_entry;
 #define PHP_SG_AUTHOR  "Jiapeng Fan"
 
 #ifdef PHP_WIN32
-#	define PHP_SG_API __declspec(dllexport)
+#define PHP_SG_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_SG_API __attribute__ ((visibility("default")))
+#define PHP_SG_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_SG_API
+#define PHP_SG_API
 #endif
 
 #ifdef ZTS

@@ -9,7 +9,7 @@
 
 SG 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，它的诞生为了方便快捷操作PHP预定义的超全局变量，用户定义的超全局变量。
 
-如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括$_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES。
+如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括 $_GET，$_POST，$_COOOKIE，$_SERVER，$_FILES。
 
 使用SG类，可以大大的减少我们的PHP代码量，提高我们的开发效率。
 
@@ -20,8 +20,9 @@ SG 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobal
 - 解决操作PHP全局变量时出现未定义系列的问题 (Undefined variable, Undefined offset)
 
 ## 安装
-### PHP版本最低要求
+### PHP版本支持包括
 - PHP 5.4 +
+- PHP 7.0 +
 
 ### 下载源码
 ```
@@ -80,7 +81,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 
 ### 设置超全局变量
 
-#### sg::set
+#### bool sg::set(string $key, mixed $value)
 ```php
 <?php
 var_dump(sg::set('test', 'test apple'));
@@ -98,7 +99,7 @@ bool(true)
 bool(true)
 ```
 
-#### sg::get
+#### mixed sg::get(string $key [, mixed $default_value = null])
 ```php
 <?php
 var_dump(sg::get('test', 'test apple'));
@@ -128,7 +129,8 @@ array(2) {
 string(3) "def"
 NULL
 ```
-#### sg::has
+
+#### bool sg::has(string $key)
 ```php
 <?php
 var_dump(sg::has('test'));
@@ -139,7 +141,8 @@ var_dump(sg::has('not_found'));
 bool(true)
 bool(false)
 ```
-#### sg::del
+
+#### bool sg::del(string $key)
 ```php
 <?php
 var_dump(sg::del('test'));
