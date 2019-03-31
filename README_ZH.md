@@ -7,9 +7,9 @@
 
 ### 介绍
 
-SG 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，它的诞生为了方便快捷操作PHP预定义的超全局变量，用户定义的超全局变量。
+[SG](https://github.com/yulonghu/sg) 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，它的诞生为了方便快捷操作PHP预定义的超全局变量，用户定义的超全局变量。
 
-如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括 $_GET，$_POST，$_COOOKIE，$_SERVER，$_FILES。
+如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括常用 $_GET，$_POST，$_COOOKIE，$_SERVER，$_FILES。
 
 使用SG类，可以大大的减少我们的PHP代码量，提高我们的开发效率。
 
@@ -97,9 +97,22 @@ var_dump(sg::set('user.0.0', 'user 0 apple'));
 var_dump(sg::set('user.0.1', 'user 1 apple'));
 var_dump(sg::set('user.a.a', 'user a apple'));
 var_dump(sg::set('user.a.b', 'user b apple'));
+
+// 以下方式不推荐，更新PHP预定义的超全局变量值
+var_dump(sg::set('g.key', 'value'));
+var_dump(sg::set('p.key', 'value'));
+var_dump(sg::set('c.key', 'value'));
+var_dump(sg::set('s.key', 'value'));
+var_dump(sg::set('f.key', 'value'));
 ```
 以上例子输出的结果:
 ```txt
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+
 bool(true)
 bool(true)
 bool(true)

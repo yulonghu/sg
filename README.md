@@ -7,7 +7,7 @@ A Simple PHP Superglobals Management
 
 ### Introduction
 
-SG Full name [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), It is very easy to management PHP predefined Superglobals variables and User-defined Superglobals variables.
+[SG](https://github.com/yulonghu/sg) Full name [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), It is very easy to management PHP predefined Superglobals variables and User-defined Superglobals variables.
 
 If in non CLI mode, SG default registration Superglobals include $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES.
 
@@ -97,9 +97,22 @@ var_dump(sg::set('user.0.0', 'user 0 apple'));
 var_dump(sg::set('user.0.1', 'user 1 apple'));
 var_dump(sg::set('user.a.a', 'user a apple'));
 var_dump(sg::set('user.a.b', 'user b apple'));
+
+// The follow methods are not recommended, update PHP predefined superglobal variable values.
+var_dump(sg::set('g.key', 'value'));
+var_dump(sg::set('p.key', 'value'));
+var_dump(sg::set('c.key', 'value'));
+var_dump(sg::set('s.key', 'value'));
+var_dump(sg::set('f.key', 'value'));
 ```
 The above example will output:
 ```txt
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+
 bool(true)
 bool(true)
 bool(true)
@@ -179,7 +192,7 @@ array(2) {
 
 ### sg.auto_trim
 
-For best performance, sg will change the original value if the trim condition is met. Avoid repeating the trim operation each time you take a value.
+For best performance, sg will change the original value if the trim condition is met. Avoid repeat the trim operation each time you take a value.
 
 ```php
 <?php
