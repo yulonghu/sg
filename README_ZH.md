@@ -29,7 +29,7 @@ SG 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobal
 git clone https://github.com/yulonghu/sg.git
 ```
 
-### 在Linux系统中编译PHP SG扩展
+### Linux系统，编译SG扩展
 ```
 $ /path/to/php/bin/phpize
 $ ./configure --with-php-config=/path/to/php/bin/php-config
@@ -44,7 +44,7 @@ extension=sg.so
 sg.enable = On
 ```
 
-重启php-fpm，就安装成功啦。
+重启php进程，就安装成功啦。
 
 ## 提供的方法
 ```php
@@ -63,7 +63,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 
 ### 获取PHP预定义的超全局变量
 
-|OLD GET METHOD (Short)|NEW GET METHOD|
+|传统的获取方式 (短)|新获取方式|
 | ------ | ------ |
 |$_GET['key']|sg::get('g.key')|
 |$_POST['key']|sg::get('p.key')|
@@ -71,13 +71,21 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$_SERVER['key']|sg::get('s.key')|
 |$_FILES['key']|sg::get('f.key')|
 
-|OLD GET METHOD (Long)|NEW GET METHOD|
+|传统的获取方式 (长)|新获取方式|
 | ------ | ------ |
 |$_GET['key']['key1']['key2']|sg::get('g.key.key1.key2')|
 |$_POST['key']['key1']['key2']|sg::get('p.key.key1.key2')|
 |$_COOKIE['key']['key1']['key2']|sg::get('c.key.key1.key2')|
 |$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
 |$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
+
+|传统的获取方式 (isset + trim)|新获取方式|
+| ------ | ------ |
+|$key = isset($_GET['key']) ? trim($_GET['key']) : null;|$key = sg::get('g.key');|
+|$key = isset($_POST['key']) ? trim($_POST['key']) : null;|$key = sg::get('p.key');|
+|$key = isset($_COOKIE['key']) ? trim($_COOKIE['key']) : null;|$key = sg::get('c.key');|
+|$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
+|$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
 
 ### 设置超全局变量
 
@@ -171,11 +179,12 @@ array(2) {
 
 ### sg.auto_trim
 
-演示自动过滤前后空格的例子, 两种方式开启自动过滤。
+演示自动过滤前后空格的例子, 支持两种方式开启自动过滤。
+
+为了获得最佳性能，如果满足trim条件, sg将改变原始值。避免每次取值时重复做trim操作。
 
 ```php
 <?php
-// sg.auto_trim = On ; php.ini
 ini_set('sg.auto_trim', 1);
 function One() {
     var_dump(sg::set('test', ' test apple ')); // Auto-call PHP trim

@@ -79,7 +79,15 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
 |$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
 
-### Get User-defined Superglobal variables
+|OLD GET METHOD (isset + trim)|NEW GET METHOD|
+| ------ | ------ |
+|$key = isset($_GET['key']) ? trim($_GET['key']) : null;|$key = sg::get('g.key');|
+|$key = isset($_POST['key']) ? trim($_POST['key']) : null;|$key = sg::get('p.key');|
+|$key = isset($_COOKIE['key']) ? trim($_COOKIE['key']) : null;|$key = sg::get('c.key');|
+|$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
+|$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
+
+### Management User-defined Superglobal variables
 
 #### bool sg::set(string $key, mixed $value)
 ```php
@@ -171,9 +179,10 @@ array(2) {
 
 ### sg.auto_trim
 
+For best performance, sg will change the original value if the trim condition is met. Avoid repeating the trim operation each time you take a value.
+
 ```php
 <?php
-// sg.auto_trim = On ; php.ini
 ini_set('sg.auto_trim', 1);
 function One() {
     var_dump(sg::set('test', ' test apple ')); // Auto-call PHP trim
