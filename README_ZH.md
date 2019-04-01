@@ -11,7 +11,7 @@
 
 如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括常用 $_GET，$_POST，$_COOOKIE，$_SERVER，$_FILES。
 
-使用SG类，可以大大的减少我们的PHP代码量，提高我们的开发效率。
+使用SG类，能让复杂的代码变得简单，开启自动过滤还能减少代码量，进而提高我们的开发效率。
 
 ### 亮点功能
 - 简单，快速，轻量
@@ -95,7 +95,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
 |$key = $_FILES['key'] ?? null; $key = trim($key);|$key = sg::get('f.key');|
 
-通过以上的整理，可以得出一个结论，传统取值方式容易出错, 如果数组维度越深，代码量会直线上升。
+通过以上的整理，可以得出一个结论，传统取值方式容易出错，如果数组维度越深，代码复杂度会直线上升。
 
 使用SG，这些情况都变得很简单。更新、删除方式类同。
 

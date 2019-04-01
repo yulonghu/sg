@@ -11,7 +11,7 @@ A Simple PHP Superglobals Management
 
 If in non CLI mode, SG default registration Superglobals include $_GET, $_POST, $_COOOKIE, $_SERVER, $_FILES.
 
-Use SG can save a lot of PHP code, Improve development efficiency.
+Use SG can make complex code to simple, Turn on Auto-trim can save a lot of PHP code, So improve development efficiency.
 
 ### Features
 - Simple, Fast, Lightweight
