@@ -89,7 +89,7 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 
 |(PHP7) 传统的获取方式 (??)|新获取方式|
 | ------ | ------ |
-|$key = $_GET['key']) ?? null; $key = trim($key);|$key = sg::get('g.key');|
+|$key = $_GET['key'] ?? null; $key = trim($key);|$key = sg::get('g.key');|
 |$key = $_POST['key'] ?? null; $key = trim($key);|$key = sg::get('p.key');|
 |$key = $_COOKIE['key'] ?? null; $key = trim($key);|$key = sg::get('c.key');|
 |$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
