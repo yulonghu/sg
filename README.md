@@ -87,6 +87,14 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
 |$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
 
+|(PHP7) OLD GET METHOD (??)|NEW GET METHOD|
+| ------ | ------ |
+|$key = $_GET['key']) ?? null; $key = trim($key);|$key = sg::get('g.key');|
+|$key = $_POST['key'] ?? null; $key = trim($key);|$key = sg::get('p.key');|
+|$key = $_COOKIE['key'] ?? null; $key = trim($key);|$key = sg::get('c.key');|
+|$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
+|$key = $_FILES['key'] ?? null; $key = trim($key);|$key = sg::get('f.key');|
+
 ### Management User-defined Superglobal variables
 
 #### bool sg::set(string $key, mixed $value)

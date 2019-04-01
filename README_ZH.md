@@ -87,6 +87,18 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 |$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
 |$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
 
+|(PHP7) 传统的获取方式 (??)|新获取方式|
+| ------ | ------ |
+|$key = $_GET['key']) ?? null; $key = trim($key);|$key = sg::get('g.key');|
+|$key = $_POST['key'] ?? null; $key = trim($key);|$key = sg::get('p.key');|
+|$key = $_COOKIE['key'] ?? null; $key = trim($key);|$key = sg::get('c.key');|
+|$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
+|$key = $_FILES['key'] ?? null; $key = trim($key);|$key = sg::get('f.key');|
+
+通过以上的整理，可以得出一个结论，传统取值方式容易出错, 如果数组维度越深，代码量会直线上升。
+
+使用SG，这些情况都变得很简单。更新、删除方式类同。
+
 ### 设置超全局变量
 
 #### bool sg::set(string $key, mixed $value)
