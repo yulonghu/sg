@@ -113,9 +113,7 @@ static int sg_str_convert_self(char *key, int key_len, char **new_key TSRMLS_DC)
 #if PHP_VERSION_ID >= 70000
         if ((pmap = zend_hash_str_find(&sg_map, key, 1)) != NULL) {
 #else
-        zval **ppmap = NULL;
         if (zend_symtable_find(&sg_map, key, key_len + 1, (void **) &pmap) != FAILURE) {
-            pmap = *ppmap;
 #endif
             need_key_len = spprintf(new_key, 0, "%s%s", Z_STRVAL_P(pmap), p);
             is_find = 1;

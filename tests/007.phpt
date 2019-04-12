@@ -52,12 +52,6 @@ unset($_COOKIE);
 unset($_SERVER);
 unset($_FILES);
 
-if ($GLOBALS == sg::all()) {
-    var_dump('$GLOBALS is equal to sg::all()');
-} else {
-    var_dump('$GLOBALS is not equal to sg::all()');
-}
-
 ?>
 --EXPECT--
 array(2) {
@@ -140,5 +134,4 @@ array(1) {
     string(4) "sg_b"
   }
 }
-string(30) "$GLOBALS is equal to sg::all()"
 
