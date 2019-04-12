@@ -28,9 +28,13 @@
 #include "Zend/zend_interfaces.h"
 #include "php_sg.h"
 
+static HashTable sg_map;
+
 ZEND_DECLARE_MODULE_GLOBALS(sg)
 
-#define CHECK_SG_ENABLE() /* {{{ */ \
+zend_class_entry *sg_ce;
+
+#define SG_CHECK_ENABLE() /* {{{ */ \
 {\
     if (!SG_G(enable)) { \
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Please set sg.enable = 1 in php.ini"); \
@@ -38,7 +42,21 @@ ZEND_DECLARE_MODULE_GLOBALS(sg)
     } \
 }/* }}} */ \
 
-zend_class_entry *sg_ce;
+#define SG_NEW_KEY_EFREE() /* {{{ */ \
+{\
+    if (key_len != new_key_len) { \
+        efree(new_key); \
+        new_key = NULL; \
+    } \
+}/* }}} */ \
+
+#define SG_ZVAL_PSTRING(z, s) do { /* {{{ */ \
+        zval *__z = (z);            \
+        Z_STRLEN_P(z) = strlen(s);  \
+        Z_STRVAL_P(z) = zend_strndup(s, Z_STRLEN_P(z)); \
+        Z_TYPE_P(z) = IS_STRING;    \
+        Z_SET_REFCOUNT_P(z, 0);     \
+    } while(0) /* }}} */ 
 
 /* {{{ ARG_INFO
  */
@@ -74,15 +92,52 @@ static void php_sg_init_globals(zend_sg_globals *sg_globals)
 }
 /* }}} */
 
+static void sg_zval_dtor(zval *pvalue) /* {{{ */
+{
+#if PHP_VERSION_ID >= 70000
+    zend_string_release(Z_STR_P(pvalue));
+#else
+    free(Z_STRVAL_P(pvalue));
+#endif
+}
+/* }}} */
+
+static int sg_str_convert_self(char *key, int key_len, char **new_key TSRMLS_DC) /* {{{ */
+{
+    int need_key_len = key_len;
+    const char *p = (key + 1);
+    zend_bool is_find = 0;
+
+    if (*p == '.' || key_len == 1) {
+        zval *pmap = NULL;
+#if PHP_VERSION_ID >= 70000
+        if ((pmap = zend_hash_str_find(&sg_map, key, 1)) != NULL) {
+#else
+        zval **ppmap = NULL;
+        if (zend_symtable_find(&sg_map, key, key_len + 1, (void **) &pmap) != FAILURE) {
+            pmap = *ppmap;
+#endif
+            need_key_len = spprintf(new_key, 0, "%s%s", Z_STRVAL_P(pmap), p);
+            is_find = 1;
+        }
+    }
+
+    if (!is_find) {
+        *new_key = key;
+    }
+
+    return need_key_len;
+}
+/* }}} */
+
 static zval *sg_strtok_get(char *key, int key_len TSRMLS_DC) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
-    HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 #else
     zval **pzval = NULL;
-    HashTable *ht = Z_ARRVAL_P(SG_G(http_globals));
 #endif
+    HashTable *ht = SG_G(http_globals);
 
     if (zend_memrchr(key, '.', key_len)) {
         char *seg = NULL, *entry = NULL, *ptr = NULL;
@@ -140,11 +195,10 @@ static int sg_strtok_set(char *key, int key_len, zval *value TSRMLS_DC) /* {{{ *
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
-    HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 #else
     zval **pzval = NULL;
-    HashTable *ht = Z_ARRVAL_P(SG_G(http_globals));
 #endif
+    HashTable *ht = SG_G(http_globals);
     int ret = FAILURE;
 
     if (zend_memrchr(key, '.', key_len)) {
@@ -217,11 +271,10 @@ static int sg_strtok_del(char *key, int key_len TSRMLS_DC) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
-    HashTable *ht = Z_ARRVAL(SG_G(http_globals));
 #else
     zval **pzval = NULL;
-    HashTable *ht = Z_ARRVAL_P(SG_G(http_globals));
 #endif
+    HashTable *ht = SG_G(http_globals);
     int ret = FAILURE;
 
     if (zend_memrchr(key, '.', key_len)) {
@@ -268,42 +321,32 @@ static int sg_strtok_del(char *key, int key_len TSRMLS_DC) /* {{{ */
 
 /** {{{ proto mixed Sg::get(string $key [, mixed $default_value = null])
  */
-PHP_METHOD(sg, get)
+static PHP_METHOD(sg, get)
 {
-    CHECK_SG_ENABLE();
+    SG_CHECK_ENABLE();
+
     zval *default_value = NULL, *pzval = NULL;
-
-#if PHP_VERSION_ID >= 70000
-    zend_string *key = NULL;
-
-    ZEND_PARSE_PARAMETERS_START(1, 2)
-        Z_PARAM_STR(key)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(default_value)
-    ZEND_PARSE_PARAMETERS_END();
-    
-    pzval = sg_strtok_get(ZSTR_VAL(key), ZSTR_LEN(key) TSRMLS_CC);
-#else
-    char *key = NULL;
-    int key_len = 0;
+    char *key = NULL, *new_key = NULL;
+    int key_len = 0, new_key_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &default_value) == FAILURE) {
         return;
     }
 
-    pzval = sg_strtok_get(key, key_len TSRMLS_CC);
-#endif
+    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
+    SG_NEW_KEY_EFREE();
 
     if (pzval) {
         if (Z_TYPE_P(pzval) == IS_STRING && SG_G(auto_trim)) {
 #if PHP_VERSION_ID >= 70000
-			zend_string *sval = php_trim(Z_STR_P(pzval), NULL, 0, 3);
-			zval_dtor(pzval);
-			ZVAL_STR(pzval, sval);
+            zend_string *sval = php_trim(Z_STR_P(pzval), NULL, 0, 3);
+            zval_dtor(pzval);
+            ZVAL_STR(pzval, sval);
 #else
-			char *tmp = php_trim(Z_STRVAL_P(pzval), Z_STRLEN_P(pzval), NULL, 0, NULL, 3 TSRMLS_CC);
-			zval_dtor(pzval);
-			ZVAL_STRING(pzval, tmp, 0);
+            char *tmp = php_trim(Z_STRVAL_P(pzval), Z_STRLEN_P(pzval), NULL, 0, NULL, 3 TSRMLS_CC);
+            zval_dtor(pzval);
+            ZVAL_STRING(pzval, tmp, 0);
 #endif
         }
         RETURN_ZVAL(pzval, 1, 0);
@@ -319,112 +362,101 @@ PHP_METHOD(sg, get)
 
 /** {{{ proto bool Sg::set(string $key, mixed $value)
  */
-PHP_METHOD(sg, set)
+static PHP_METHOD(sg, set)
 {
-    CHECK_SG_ENABLE();
+    SG_CHECK_ENABLE();
+
     zval *value = NULL;
-
-#if PHP_VERSION_ID >= 70000
-    zend_string *key = NULL;
-
-    ZEND_PARSE_PARAMETERS_START(2, 2)
-        Z_PARAM_STR(key)
-        Z_PARAM_ZVAL(value)
-    ZEND_PARSE_PARAMETERS_END();
-
-    if (sg_strtok_set(ZSTR_VAL(key), ZSTR_LEN(key), value TSRMLS_CC) == SUCCESS) {
-        RETURN_TRUE;
-    }
-#else
-    char *key = NULL;
-    int key_len = 0;
-
+    char *key = NULL, *new_key = NULL;
+    int key_len = 0, new_key_len = 0, ret = 0;
+   
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &value) == FAILURE) {
         return;
     }
 
-    if (sg_strtok_set(key, key_len, value TSRMLS_CC) == SUCCESS) {
+    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    ret = sg_strtok_set(new_key, new_key_len, value TSRMLS_CC);
+    SG_NEW_KEY_EFREE();
+
+    if (ret == SUCCESS) {
         RETURN_TRUE;
     }
-#endif
-
     RETURN_FALSE;
 }
 /* }}} */
 
 /** {{{ proto bool Sg::has(string $key)
-*/
-PHP_METHOD(sg, has)
+ */
+static PHP_METHOD(sg, has)
 {
-    CHECK_SG_ENABLE();
+    SG_CHECK_ENABLE();
 
-#if PHP_VERSION_ID >= 70000
-    zend_string *key = NULL;
-
-    ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_STR(key)
-    ZEND_PARSE_PARAMETERS_END();
-
-    if (sg_strtok_get(ZSTR_VAL(key), ZSTR_LEN(key) TSRMLS_CC) != NULL) {
-        RETURN_TRUE;
-    }
-#else
-    char *key = NULL;
-    int key_len = 0;
+    char *key = NULL, *new_key = NULL;
+    int key_len = 0, new_key_len = 0;
+    zval *pvalue = NULL;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len) == FAILURE) {
         return;
     }
 
-     if(sg_strtok_get(key, key_len TSRMLS_CC) != NULL) {
-        RETURN_TRUE;
-     }
-#endif
-    
-    RETURN_FALSE;
+    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    pvalue = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
+    SG_NEW_KEY_EFREE();
+
+    RETURN_BOOL(pvalue);
 }
 /* }}} */
 
 /** {{{ proto bool Sg::del(string $key)
  */
-PHP_METHOD(sg, del)
+static PHP_METHOD(sg, del)
 {
-    CHECK_SG_ENABLE();
+    SG_CHECK_ENABLE();
 
-#if PHP_VERSION_ID >= 70000
-    zend_string *key = NULL;
-
-    ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_STR(key)
-    ZEND_PARSE_PARAMETERS_END();
-
-    if (sg_strtok_del(ZSTR_VAL(key), ZSTR_LEN(key) TSRMLS_CC) == SUCCESS) {
-        RETURN_TRUE;
-    }
-#else
-    char *key = NULL;
-    int key_len = 0;
+    char *key = NULL, *new_key = NULL;
+    int key_len = 0, new_key_len = 0, ret = 0;
     
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len) == FAILURE) {
         return;
     }
 
-    if (sg_strtok_del(key, key_len TSRMLS_CC) == SUCCESS) {
+    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    ret = sg_strtok_del(new_key, new_key_len TSRMLS_CC);
+    SG_NEW_KEY_EFREE();
+
+    if (ret == SUCCESS) {
         RETURN_TRUE;
     }
-#endif
-    
+
     RETURN_FALSE;
+}
+/* }}} */
+
+/** {{{ proto bool Sg::all(void)
+ */
+static PHP_METHOD(sg, all)
+{
+    SG_CHECK_ENABLE();
+
+#if PHP_VERSION_ID >= 70000
+    ZVAL_ARR(return_value, SG_G(http_globals));
+    Z_TRY_ADDREF_P(return_value);
+#else
+    Z_TYPE_P(return_value) = IS_ARRAY;
+    Z_ARRVAL_P(return_value) = SG_G(http_globals);
+    Z_ADDREF_P(return_value);
+#endif
 }
 /* }}} */
 
 /* {{{ sg_methods[]
  */
-const zend_function_entry sg_methods[] = {
+static const zend_function_entry sg_methods[] = {
     PHP_ME(sg, get, sg_get_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, set, sg_set_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, has, sg_has_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, del, sg_del_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(sg, all, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 #if PHP_VERSION_ID >= 54000
     PHP_FE_END
 #else
@@ -435,22 +467,57 @@ const zend_function_entry sg_methods[] = {
 
 /* {{{ PHP_MINIT_FUNCTION
  */
-PHP_MINIT_FUNCTION(sg)
+static PHP_MINIT_FUNCTION(sg)
 {
     ZEND_INIT_MODULE_GLOBALS(sg, php_sg_init_globals, NULL);
 
     REGISTER_INI_ENTRIES();
+
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Sg", sg_methods);
-
 #if PHP_VERSION_ID >= 70000
     sg_ce = zend_register_internal_class_ex(&ce, NULL);
 #else
     sg_ce = zend_register_internal_class_ex(&ce, NULL, NULL TSRMLS_CC);
 #endif
 
-    if (strcasecmp("cli", sapi_module.name) == 0) {
-        SG_G(cli) = 1;
+    if (SG_G(enable)) {
+        zend_hash_init(&sg_map, 8, NULL, (dtor_func_t) sg_zval_dtor, 1);
+#if PHP_VERSION_ID >= 70000
+        zval preg;
+
+        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_GET"), 1));
+        zend_hash_str_add_new(&sg_map, "g", sizeof("g") - 1, &preg);
+
+        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_POST"), 1));
+        zend_hash_str_add_new(&sg_map, "p", sizeof("p") - 1, &preg);
+
+        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_COOKIE"), 1));
+        zend_hash_str_add_new(&sg_map, "c", sizeof("c") - 1, &preg);
+
+        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_SERVER"), 1));
+        zend_hash_str_add_new(&sg_map, "s", sizeof("s") - 1, &preg);
+
+        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_FILES"), 1));
+        zend_hash_str_add_new(&sg_map, "f", sizeof("f") - 1, &preg);
+#else
+        zval preg;
+
+        SG_ZVAL_PSTRING(&preg, "_GET");
+        zend_hash_add(&sg_map, "g", sizeof("g"), (void *)&preg, sizeof(zval), NULL);
+
+        SG_ZVAL_PSTRING(&preg, "_POST");
+        zend_hash_add(&sg_map, "p", sizeof("p"), (void *)&preg, sizeof(zval), NULL);
+        
+        SG_ZVAL_PSTRING(&preg, "_COOKIE");
+        zend_hash_add(&sg_map, "c", sizeof("c"), (void *)&preg, sizeof(zval), NULL);
+
+        SG_ZVAL_PSTRING(&preg, "_SERVER");
+        zend_hash_add(&sg_map, "s", sizeof("s"), (void *)&preg, sizeof(zval), NULL);
+
+        SG_ZVAL_PSTRING(&preg, "_FILES");
+        zend_hash_add(&sg_map, "f", sizeof("f"), (void *)&preg, sizeof(zval), NULL);
+#endif
     }
 
     return SUCCESS;
@@ -459,74 +526,31 @@ PHP_MINIT_FUNCTION(sg)
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
-PHP_MSHUTDOWN_FUNCTION(sg)
+static PHP_MSHUTDOWN_FUNCTION(sg)
 {
+    if (SG_G(enable)) {
+        zend_hash_destroy(&sg_map);
+    }
+
     UNREGISTER_INI_ENTRIES();
+
     return SUCCESS;
 }
 /* }}} */
 
 /* {{{ PHP_RINIT_FUNCTION
  */
-PHP_RINIT_FUNCTION(sg)
+static PHP_RINIT_FUNCTION(sg)
 {
     if (SG_G(enable)) {
 #if PHP_VERSION_ID >= 70000
-        array_init(&SG_G(http_globals));
-#else
-        SG_G(http_globals) = NULL;
-        MAKE_STD_ZVAL(SG_G(http_globals));
-        array_init(SG_G(http_globals));
-#endif
-        if (!SG_G(cli)) {
-#if PHP_VERSION_ID >= 70000
-            HashTable *ht = Z_ARRVAL(SG_G(http_globals));
-
-            zval *get = &PG(http_globals)[TRACK_VARS_GET];
-            zval *post = &PG(http_globals)[TRACK_VARS_POST];
-            zval *cookie = &PG(http_globals)[TRACK_VARS_COOKIE];
-
-            if (PG(auto_globals_jit)) {
-                zend_is_auto_global_str(ZEND_STRL("_SERVER"));
-            }
-            zval *server = &PG(http_globals)[TRACK_VARS_SERVER];
-            zval *files = &PG(http_globals)[TRACK_VARS_FILES];
-
-            zend_hash_str_add_new(ht, "g", 1, get);
-            zend_hash_str_add_new(ht, "p", 1, post);
-            zend_hash_str_add_new(ht, "c", 1, cookie);
-
-            zend_hash_str_add_new(ht, "s", 1, server);
-            zend_hash_str_add_new(ht, "f", 1, files);
-
-            Z_TRY_ADDREF_P(get);
-            Z_TRY_ADDREF_P(post);
-            Z_TRY_ADDREF_P(cookie);
-            Z_TRY_ADDREF_P(server);
-            Z_TRY_ADDREF_P(files);
-#else
-            zend_is_auto_global("_SERVER", sizeof("_SERVER") - 1 TSRMLS_CC);
-            zval *ht = SG_G(http_globals);
-
-            zval *get = PG(http_globals)[TRACK_VARS_GET];
-            zval *post = PG(http_globals)[TRACK_VARS_POST];
-            zval *cookie = PG(http_globals)[TRACK_VARS_COOKIE];
-            zval *server = PG(http_globals)[TRACK_VARS_SERVER];
-            zval *files = PG(http_globals)[TRACK_VARS_FILES];
-
-            add_assoc_zval_ex(ht, "g", sizeof("g"), get);
-            add_assoc_zval_ex(ht, "p", sizeof("p"), post);
-            add_assoc_zval_ex(ht, "c", sizeof("c"), cookie);
-            add_assoc_zval_ex(ht, "s", sizeof("s"), server);
-            add_assoc_zval_ex(ht, "f", sizeof("f"), files);
-
-            Z_ADDREF_P(get);
-            Z_ADDREF_P(post);
-            Z_ADDREF_P(cookie);
-            Z_ADDREF_P(server);
-            Z_ADDREF_P(files);
-#endif
+        if (PG(auto_globals_jit)) {
+            zend_is_auto_global_str(ZEND_STRL("_SERVER"));
         }
+#else
+        zend_is_auto_global("_SERVER", sizeof("_SERVER") - 1 TSRMLS_CC);
+#endif
+        SG_G(http_globals) = &EG(symbol_table);
     }
 
     return SUCCESS;
@@ -535,25 +559,15 @@ PHP_RINIT_FUNCTION(sg)
 
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
-PHP_RSHUTDOWN_FUNCTION(sg)
+static PHP_RSHUTDOWN_FUNCTION(sg)
 {
-    if (SG_G(enable)) {
-#if PHP_VERSION_ID >= 70000
-        zval_ptr_dtor(&SG_G(http_globals));
-        ZVAL_UNDEF(&SG_G(http_globals));
-#else
-        zval_ptr_dtor(&(SG_G(http_globals)));
-        SG_G(http_globals) = NULL;
-#endif
-    }
-
     return SUCCESS;
 }
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
  */
-PHP_MINFO_FUNCTION(sg)
+static PHP_MINFO_FUNCTION(sg)
 {
     php_info_print_table_start();
     php_info_print_table_header(2, "sg support", "enabled");
@@ -568,7 +582,9 @@ PHP_MINFO_FUNCTION(sg)
 /* {{{ sg_module_entry
  */
 zend_module_entry sg_module_entry = {
-    STANDARD_MODULE_HEADER,
+    STANDARD_MODULE_HEADER_EX,
+    NULL,
+    NULL,
     "sg",
     NULL,
     PHP_MINIT(sg),

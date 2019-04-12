@@ -22,7 +22,7 @@
 extern zend_module_entry sg_module_entry;
 #define phpext_sg_ptr &sg_module_entry
 
-#define PHP_SG_VERSION "1.0.0"
+#define PHP_SG_VERSION "2.0.0"
 #define PHP_SG_AUTHOR  "Jiapeng Fan"
 
 #ifdef PHP_WIN32
@@ -38,16 +38,10 @@ extern zend_module_entry sg_module_entry;
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(sg)
-	zend_bool auto_trim;
+    zend_bool auto_trim;
+    HashTable *http_globals;
 
-#if PHP_VERSION_ID >= 70000
-	zval http_globals;
-#else
-    zval *http_globals;
-#endif
-
-	zend_bool enable;
-	zend_bool cli;
+    zend_bool enable;
 ZEND_END_MODULE_GLOBALS(sg)
 
 extern ZEND_DECLARE_MODULE_GLOBALS(sg);
@@ -58,7 +52,7 @@ extern ZEND_DECLARE_MODULE_GLOBALS(sg);
 #define SG_G(v) (sg_globals.v)
 #endif
 
-#endif	/* PHP_SG_H */
+#endif  /* PHP_SG_H */
 
 /*
  * Local variables:

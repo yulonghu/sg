@@ -1,5 +1,5 @@
 --TEST--
-Check for Sg Index array
+Check for Sg Index Array
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--

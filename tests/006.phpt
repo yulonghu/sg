@@ -1,5 +1,5 @@
 --TEST--
-Check for Sg::del 
+Check for Sg::del()
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--
@@ -25,6 +25,7 @@ var_dump(sg::get('user'));
 echo "------------------del_undefined\n";
 var_dump(sg::del('undefined'));
 var_dump(sg::del('undefined.0.1'));
+var_dump(sg::del('undefined.0.1'));
 
 ?>
 --EXPECT--
@@ -48,6 +49,7 @@ array(1) {
   }
 }
 ------------------del_undefined
+bool(false)
 bool(false)
 bool(false)
 

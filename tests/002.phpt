@@ -1,5 +1,5 @@
 --TEST--
-Check for Sg
+Check for Sg All Method
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--
@@ -28,6 +28,8 @@ var_dump(sg::del($key));
 echo "------------------get\n";
 var_dump(sg::get($key));
 var_dump(sg::has($key));
+
+sg::all();
 
 ?>
 --EXPECT--

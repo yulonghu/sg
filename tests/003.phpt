@@ -1,5 +1,5 @@
 --TEST--
-Check for Sg string key
+Check for Sg Dot Key
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--
