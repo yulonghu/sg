@@ -102,9 +102,9 @@ static void sg_zval_dtor(zval *pvalue) /* {{{ */
 }
 /* }}} */
 
-static int sg_str_convert_self(char *key, int key_len, char **new_key TSRMLS_DC) /* {{{ */
+static size_t sg_str_convert_self(char *key, size_t key_len, char **new_key TSRMLS_DC) /* {{{ */
 {
-    int need_key_len = key_len;
+    size_t need_key_len = key_len;
     const char *p = (key + 1);
     zend_bool is_find = 0;
 
@@ -128,7 +128,7 @@ static int sg_str_convert_self(char *key, int key_len, char **new_key TSRMLS_DC)
 }
 /* }}} */
 
-static zval *sg_strtok_get(char *key, int key_len TSRMLS_DC) /* {{{ */
+static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
@@ -189,7 +189,7 @@ static zval *sg_strtok_get(char *key, int key_len TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static int sg_strtok_set(char *key, int key_len, zval *value TSRMLS_DC) /* {{{ */
+static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
@@ -265,7 +265,7 @@ static int sg_strtok_set(char *key, int key_len, zval *value TSRMLS_DC) /* {{{ *
 }
 /* }}} */
 
-static int sg_strtok_del(char *key, int key_len TSRMLS_DC) /* {{{ */
+static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zval *pzval = NULL;
@@ -325,7 +325,7 @@ static PHP_METHOD(sg, get)
 
     zval *default_value = NULL, *pzval = NULL;
     char *key = NULL, *new_key = NULL;
-    int key_len = 0, new_key_len = 0;
+    size_t key_len = 0, new_key_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &default_value) == FAILURE) {
         return;
@@ -366,7 +366,7 @@ static PHP_METHOD(sg, set)
 
     zval *value = NULL;
     char *key = NULL, *new_key = NULL;
-    int key_len = 0, new_key_len = 0, ret = 0;
+    size_t key_len = 0, new_key_len = 0, ret = 0;
    
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &value) == FAILURE) {
         return;
@@ -390,10 +390,10 @@ static PHP_METHOD(sg, has)
     SG_CHECK_ENABLE();
 
     char *key = NULL, *new_key = NULL;
-    int key_len = 0, new_key_len = 0;
+    size_t key_len = 0, new_key_len = 0;
     zval *pvalue = NULL;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len) == FAILURE) {
         return;
     }
 
@@ -412,9 +412,9 @@ static PHP_METHOD(sg, del)
     SG_CHECK_ENABLE();
 
     char *key = NULL, *new_key = NULL;
-    int key_len = 0, new_key_len = 0, ret = 0;
+    size_t key_len = 0, new_key_len = 0, ret = 0;
     
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len) == FAILURE) {
         return;
     }
 
