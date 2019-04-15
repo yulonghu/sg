@@ -167,9 +167,6 @@ static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
                     efree(entry);
                     return NULL;
                 }
-                if (Z_ISREF_PP(pzval)) {
-                    SEPARATE_ZVAL(pzval);
-                }
                 if (Z_TYPE_PP(pzval) == IS_ARRAY) {
                     ht = Z_ARRVAL_PP(pzval);
                 } else {
@@ -256,30 +253,13 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
                     ht = Z_ARRVAL_P(pzval);
                 }
 #else
-                do {
-                    if (zend_symtable_find(ht, seg, strlen(seg) + 1, (void **) &pzval) == FAILURE) {
-                        is_narr = 1;
-                        break;
-                    }
-                    if (Z_ISREF_PP(pzval)) {
-                        SEPARATE_ZVAL(pzval);
-                    }
-                    if (Z_TYPE_PP(pzval) != IS_ARRAY) {
-                        is_narr = 1;
-                        break;
-                    }
-                } while(0);
-
-                if (is_narr) {
+                if (zend_symtable_find(ht, seg, strlen(seg) + 1, (void **) &pzval) == FAILURE || Z_TYPE_PP(pzval) != IS_ARRAY) {
                     MAKE_STD_ZVAL(zarr);
                     array_init(zarr);
                     ret = zend_symtable_update(ht, seg, strlen(seg) + 1, &zarr, sizeof(zarr), NULL);
                     pzval = &zarr;
-                    ht = Z_ARRVAL_P(zarr);
-                    is_narr = 0;
-                } else {
-                    ht = Z_ARRVAL_PP(pzval);
                 }
+                ht = Z_ARRVAL_PP(pzval);
 #endif
                 seg = php_strtok_r(NULL, ".", &ptr);
             } while (seg);
@@ -342,9 +322,6 @@ static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
                 if (zend_symtable_find(ht, seg, strlen(seg) + 1, (void **) &pzval) == FAILURE) {
                     break;
                 }
-                if (Z_ISREF_PP(pzval)) {
-                    SEPARATE_ZVAL(pzval);
-                }
                 ht = Z_ARRVAL_PP(pzval);
 #endif
                 seg = php_strtok_r(NULL, ".", &ptr);
@@ -378,7 +355,6 @@ static PHP_METHOD(sg, get)
 
     new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
     pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
-    
     SG_NEW_KEY_EFREE();
 
     if (pzval) {

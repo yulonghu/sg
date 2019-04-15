@@ -64,8 +64,8 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 
 ### Superglobals <=> SG HashMap
-
-Remark: Identifier __CONTAIN contains methods get, set, has, del
+- Identifier __CONTAIN contains methods get, set, has, del
+- When management sessions (HashKey = n), First call the function session_start()
 
 |PHP Predefined Superglobals|SG HashKey| Method Example|
 | ------ | ------ | ------ |

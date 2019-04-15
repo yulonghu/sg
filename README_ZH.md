@@ -64,8 +64,8 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 
 ### 超全局变量 <=> SG MAP表
-
-备注: 标识符__CONTAIN包含方法有 get，set，has，del
+- 标识符__CONTAIN包含方法有 get，set，has，del
+- 管理会话时(HashKey = n), 请先调用函数 session_start()
 
 |PHP默认超全局变量|对应SG参数的缩写| Method Example|
 | ------ | ------ | ------ |
