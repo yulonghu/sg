@@ -139,16 +139,12 @@ static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 #endif
     HashTable *ht = SG_G(http_globals);
 
-    if (zend_memrchr(key, '.', key_len)) {
+    if (strchr(key, '.')) {
         char *seg = NULL, *entry = NULL, *ptr = NULL;
 
         entry = estrndup(key, key_len);
         if ((seg = php_strtok_r(entry, ".", &ptr))) {
             do {
-                if (ht == NULL) {
-                    efree(entry);
-                    return NULL;
-                }
 #if PHP_VERSION_ID >= 70000
                 if ((pzval = zend_symtable_str_find(ht, seg, strlen(seg))) == NULL) {
                     efree(entry);
@@ -160,7 +156,7 @@ static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
                 if (Z_TYPE_P(pzval) == IS_ARRAY) {
                     ht = Z_ARRVAL_P(pzval);
                 } else {
-                    ht = NULL;
+                    break;
                 }
 #else
                 if (zend_symtable_find(ht, seg, strlen(seg) + 1, (void **) &pzval) == FAILURE) {
@@ -170,7 +166,7 @@ static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
                 if (Z_TYPE_PP(pzval) == IS_ARRAY) {
                     ht = Z_ARRVAL_PP(pzval);
                 } else {
-                    ht = NULL;
+                    break;
                 }
 #endif
             } while ((seg = php_strtok_r(NULL, ".", &ptr)));
@@ -203,9 +199,8 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
 #endif
     HashTable *ht = SG_G(http_globals);
     int ret = FAILURE;
-    zend_bool is_narr = 0;
 
-    if (zend_memrchr(key, '.', key_len)) {
+    if (strchr(key, '.')) {
         char *seg = NULL, *entry = NULL, *ptr = NULL;
 #if PHP_VERSION_ID >= 70000
         zval zarr;
@@ -215,7 +210,7 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
         entry = estrndup(key, key_len);
         if ((seg = php_strtok_r(entry, ".", &ptr))) {
             do {
-                if (strlen(ptr) < 1) {
+                if (!(*ptr)) {
 #if PHP_VERSION_ID >= 70000
                     if(zend_symtable_str_update(ht, seg, strlen(seg), value)) {
                         ret = SUCCESS;
@@ -227,30 +222,22 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
                 }
 
 #if PHP_VERSION_ID >= 70000
-                pzval = zend_symtable_str_find(ht, seg, strlen(seg));
-                do {
-                    if (!pzval) {
-                        is_narr = 1;
-                        break;
-                    }
+                if ((pzval = zend_symtable_str_find(ht, seg, strlen(seg)))) {
                     if (Z_ISREF_P(pzval)) {
                         pzval = Z_REFVAL_P(pzval);
                     }
-                    if (Z_TYPE_P(pzval) != IS_ARRAY) {
-                        is_narr = 1;
-                        break;
+                    if (Z_TYPE_P(pzval) == IS_ARRAY) {
+                        ht = Z_ARRVAL_P(pzval);
+                    } else {
+                        goto NEW_ARR;
                     }
-                } while(0);
-
-                if (is_narr) {
+                } else {
+NEW_ARR:
                     array_init(&zarr);
                     if(!zend_symtable_str_update(ht, seg, strlen(seg), &zarr)) {
                         break;
                     }
                     ht = Z_ARRVAL(zarr);
-                    is_narr = 0;
-                } else {
-                    ht = Z_ARRVAL_P(pzval);
                 }
 #else
                 if (zend_symtable_find(ht, seg, strlen(seg) + 1, (void **) &pzval) == FAILURE || Z_TYPE_PP(pzval) != IS_ARRAY) {
@@ -295,14 +282,14 @@ static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
     HashTable *ht = SG_G(http_globals);
     int ret = FAILURE;
 
-    if (zend_memrchr(key, '.', key_len)) {
-        char *last_seg = NULL, *seg = NULL, *entry = NULL, *ptr = NULL;
+    if (strchr(key, '.')) {
+        char *seg = NULL, *entry = NULL, *ptr = NULL;
 
         entry = estrndup(key, key_len);
         if ((seg = php_strtok_r(entry, ".", &ptr))) {
             do {
 #if PHP_VERSION_ID >= 70000
-                if (!strlen(ptr)) {
+                if (!(*ptr)) {
                     ret = zend_symtable_str_del(ht, seg, strlen(seg));
                     break;
                 }
@@ -315,7 +302,7 @@ static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
                 }
                 ht = Z_ARRVAL_P(pzval);
 #else
-                if (!strlen(ptr)) {
+                if (!(*ptr)) {
                     ret = zend_symtable_del(ht, seg, strlen(seg) + 1);
                     break;
                 }

@@ -29,6 +29,10 @@ echo "------------------get\n";
 var_dump(sg::get($key));
 var_dump(sg::has($key));
 
+echo "------------------others\n";
+var_dump(sg::set('others.', 100));
+var_dump(sg::get('others'));
+
 sg::all();
 
 ?>
@@ -48,4 +52,7 @@ bool(true)
 ------------------get
 NULL
 bool(false)
+------------------others
+bool(true)
+int(100)
 
