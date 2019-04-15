@@ -1,5 +1,5 @@
 --TEST--
-Check for sg presence
+Check for Sg Presence
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --FILE--

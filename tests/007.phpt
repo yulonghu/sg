@@ -1,5 +1,5 @@
 --TEST--
-Check for sg::all()
+Check for Sg::all()
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--

@@ -7,11 +7,11 @@
 
 ### 介绍
 
-[SG](https://github.com/yulonghu/sg) 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，它的诞生为了方便快捷操作PHP预定义的超全局变量，用户定义的超全局变量。
+[SG](https://github.com/yulonghu/sg) 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，引用全局作用域中可用的全部变量，扩展了PHP全局变量人性化的管理能力。
 
-如果在非CLI模式，SG默认托管PHP预定义的超全局变量, 包括常用 $_GET，$_POST，$_COOOKIE，$_SERVER，$_FILES。
+这些全局变量是：$GLOBALS，$_SERVER，$_GET，$_POST，$_FILES，$_COOKIE，$_SESSION，$_REQUEST，$_ENV。
 
-使用SG类，能让复杂的代码变得简单，开启自动过滤还能减少代码量，进而提高我们的开发效率。
+使用SG类，复杂代码变得简单，变得优雅，开启自动过滤还能减少代码量，进而提高我们的开发效率。
 
 ### 亮点功能
 - 简单，快速，轻量
@@ -46,62 +46,47 @@ sg.enable = On
 
 重启php进程，就安装成功啦。
 
-## 提供的方法
+## 帮助手册
+
+### 支持的方法
 ```php
+array sg::all(void)
 mixed sg::get(string $key [, mixed $default_value = null])
 bool sg::set(string $key, mixed $value)
 bool sg::has(string $key)
 bool sg::del(string $key)
 ```
 
-## 支持的INI配置项
+### 支持的INI配置项
 ```ini
-sg.enable = On/Off
+sg.enable = On/Off ; Default Off
 sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
-## 详细例子
 
-### 获取PHP预定义的超全局变量
+### 超全局变量 <=> SG MAP表
 
-|传统的获取方式 (短)|新获取方式|
-| ------ | ------ |
-|$_GET['key']|sg::get('g.key')|
-|$_POST['key']|sg::get('p.key')|
-|$_COOKIE['key']|sg::get('c.key')|
-|$_SERVER['key']|sg::get('s.key')|
-|$_FILES['key']|sg::get('f.key')|
+备注: 标识符__CONTAIN包含方法有 get，set，has，del
 
-|传统的获取方式 (长)|新获取方式|
-| ------ | ------ |
-|$_GET['key']['key1']['key2']|sg::get('g.key.key1.key2')|
-|$_POST['key']['key1']['key2']|sg::get('p.key.key1.key2')|
-|$_COOKIE['key']['key1']['key2']|sg::get('c.key.key1.key2')|
-|$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
-|$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
+|PHP默认超全局变量|对应SG参数的缩写| Method Example|
+| ------ | ------ | ------ |
+|$GLOBALS|无|sg::all()|
+|$_SERVER|s|sg::__CONTAIN('s')|
+|$_GET|g|sg::__CONTAIN('g')|
+|$_POST|p|sg::__CONTAIN('p')|
+|$_FILES|f|sg::__CONTAIN('f')|
+|$_COOKIE|c|sg::__CONTAIN('c')|
+|$_SESSION|n|sg::__CONTAIN('n')|
+|$_REQUEST|r|sg::__CONTAIN('r')|
+|$_ENV|e|sg::__CONTAIN('e')|
 
-|传统的获取方式 (isset + trim)|新获取方式|
-| ------ | ------ |
-|$key = isset($_GET['key']) ? trim($_GET['key']) : null;|$key = sg::get('g.key');|
-|$key = isset($_POST['key']) ? trim($_POST['key']) : null;|$key = sg::get('p.key');|
-|$key = isset($_COOKIE['key']) ? trim($_COOKIE['key']) : null;|$key = sg::get('c.key');|
-|$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
-|$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
-
-|(PHP7) 传统的获取方式 (??)|新获取方式|
-| ------ | ------ |
-|$key = $_GET['key'] ?? null; $key = trim($key);|$key = sg::get('g.key');|
-|$key = $_POST['key'] ?? null; $key = trim($key);|$key = sg::get('p.key');|
-|$key = $_COOKIE['key'] ?? null; $key = trim($key);|$key = sg::get('c.key');|
-|$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
-|$key = $_FILES['key'] ?? null; $key = trim($key);|$key = sg::get('f.key');|
-
-通过以上的整理，可以得出一个结论，传统取值方式容易出错，如果数组维度越深，代码复杂度会直线上升。
-
-使用SG，这些情况都变得很简单。更新、删除方式类同。
-
-### 设置超全局变量
+### 方法的使用
 
 #### bool sg::set(string $key, mixed $value)
+
+设置全局作用域变量，找不到$key则新增，否则更新值。
+
+返回值: TRUE 成功，FALSE 失败
+
 ```php
 <?php
 var_dump(sg::set('test', 'test apple'));
@@ -109,13 +94,6 @@ var_dump(sg::set('user.0.0', 'user 0 apple'));
 var_dump(sg::set('user.0.1', 'user 1 apple'));
 var_dump(sg::set('user.a.a', 'user a apple'));
 var_dump(sg::set('user.a.b', 'user b apple'));
-
-// 以下方式不推荐，更新PHP预定义的超全局变量值
-var_dump(sg::set('g.key', 'value'));
-var_dump(sg::set('p.key', 'value'));
-var_dump(sg::set('c.key', 'value'));
-var_dump(sg::set('s.key', 'value'));
-var_dump(sg::set('f.key', 'value'));
 ```
 以上例子输出的结果:
 ```txt
@@ -124,15 +102,12 @@ bool(true)
 bool(true)
 bool(true)
 bool(true)
-
-bool(true)
-bool(true)
-bool(true)
-bool(true)
-bool(true)
 ```
 
 #### mixed sg::get(string $key [, mixed $default_value = null])
+
+读取全局作用域变量, 找不到$key时，$default_value值生效。
+
 ```php
 <?php
 var_dump(sg::get('test', 'test apple'));
@@ -164,6 +139,11 @@ NULL
 ```
 
 #### bool sg::has(string $key)
+
+检查全局作用域中$key是否存在
+
+返回值: TRUE 存在，FALSE 不存在
+
 ```php
 <?php
 var_dump(sg::has('test'));
@@ -176,6 +156,11 @@ bool(false)
 ```
 
 #### bool sg::del(string $key)
+
+删除全局作用域中变量$key
+
+返回值: TRUE 成功，FALSE 失败
+
 ```php
 <?php
 var_dump(sg::del('test'));
@@ -201,6 +186,61 @@ array(2) {
   }
 }
 ```
+
+### array sg::all(void)
+结果与 [$GLOBALS](https://www.php.net/manual/zh/reserved.variables.globals.php) 相同
+
+## 补充PHP预定义的超全局变量例子
+
+### 获取PHP预定义的超全局变量
+
+|传统的获取方式 (短)|新获取方式|
+| ------ | ------ |
+|$_SERVER['key']|sg::get('s.key')|
+|$_GET['key']|sg::get('g.key')|
+|$_POST['key']|sg::get('p.key')|
+|$_FILES['key']|sg::get('f.key')|
+|$_COOKIE['key']|sg::get('c.key')|
+|$_SESSION['key']|sg::get('n.key')|
+|$_REQUEST['key']|sg::get('r.key')|
+|$_ENV['key']|sg::get('e.key')|
+
+|传统的获取方式 (长)|新获取方式|
+| ------ | ------ |
+|$_SERVER['key']['key1']['key2']|sg::get('s.key.key1.key2')|
+|$_GET['key']['key1']['key2']|sg::get('g.key.key1.key2')|
+|$_POST['key']['key1']['key2']|sg::get('p.key.key1.key2')|
+|$_FILES['key']['key1']['key2']|sg::get('f.key.key1.key2')|
+|$_COOKIE['key']['key1']['key2']|sg::get('c.key.key1.key2')|
+|$_SESSION['key']['key1']['key2']|sg::get('n.key.key1.key2')|
+|$_REQUEST['key']['key1']['key2']|sg::get('r.key.key1.key2')|
+|$_ENV['key']['key1']['key2']|sg::get('e.key.key1.key2')|
+
+|传统的获取方式 (isset + trim)|新获取方式|
+| ------ | ------ |
+|$key = isset($_SERVER['key']) ? trim($_SERVER['key']) : null;|$key = sg::get('s.key');|
+|$key = isset($_GET['key']) ? trim($_GET['key']) : null;|$key = sg::get('g.key');|
+|$key = isset($_POST['key']) ? trim($_POST['key']) : null;|$key = sg::get('p.key');|
+|$key = isset($_FILES['key']) ? trim($_FILES['key']) : null;|$key = sg::get('f.key');|
+|$key = isset($_COOKIE['key']) ? trim($_COOKIE['key']) : null;|$key = sg::get('c.key');|
+|$key = isset($_SESSION['key']) ? trim($_SESSION['key']) : null;|$key = sg::get('n.key');|
+|$key = isset($_REQUEST['key']) ? trim($_REQUEST['key']) : null;|$key = sg::get('r.key');|
+|$key = isset($_ENV['key']) ? trim($_ENV['key']) : null;|$key = sg::get('e.key');|
+
+|(PHP7) 传统的获取方式 (??)|新获取方式|
+| ------ | ------ |
+|$key = $_SERVER['key'] ?? null; $key = trim($key);|$key = sg::get('s.key');|
+|$key = $_GET['key'] ?? null; $key = trim($key);|$key = sg::get('g.key');|
+|$key = $_POST['key'] ?? null; $key = trim($key);|$key = sg::get('p.key');|
+|$key = $_FILES['key'] ?? null; $key = trim($key);|$key = sg::get('f.key');|
+|$key = $_COOKIE['key'] ?? null; $key = trim($key);|$key = sg::get('c.key');|
+|$key = $_SESSION['key'] ?? null; $key = trim($key);|$key = sg::get('n.key');|
+|$key = $_REQUEST['key'] ?? null; $key = trim($key);|$key = sg::get('r.key');|
+|$key = $_ENV['key'] ?? null; $key = trim($key);|$key = sg::get('e.key');|
+
+通过以上的整理，可以得出一个结论，传统取值方式容易出错，如果数组维度越深，代码复杂度会直线上升。
+
+使用SG，这些情况都变得很简单。更新、删除方式类同。
 
 ### sg.auto_trim
 
