@@ -40,7 +40,6 @@ extern zend_module_entry sg_module_entry;
 ZEND_BEGIN_MODULE_GLOBALS(sg)
     zend_bool auto_trim;
     HashTable *http_globals;
-
     zend_bool enable;
 ZEND_END_MODULE_GLOBALS(sg)
 

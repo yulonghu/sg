@@ -489,10 +489,9 @@ static PHP_MINIT_FUNCTION(sg)
 #endif
 
     if (SG_G(enable)) {
+        zval preg;
         zend_hash_init(&sg_map, 16, NULL, (dtor_func_t) sg_zval_dtor, 1);
 #if PHP_VERSION_ID >= 70000
-        zval preg;
-
         ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_GET"), 1));
         zend_hash_str_add_new(&sg_map, "g", sizeof("g") - 1, &preg);
 
@@ -517,7 +516,6 @@ static PHP_MINIT_FUNCTION(sg)
         ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_ENV"), 1));
         zend_hash_str_add_new(&sg_map, "e", sizeof("e") - 1, &preg);
 #else
-        zval preg;
 
         SG_ZVAL_PSTRING(&preg, "_GET");
         zend_hash_add(&sg_map, "g", sizeof("g"), (void *)&preg, sizeof(zval), NULL);
