@@ -7,17 +7,16 @@ A Simple PHP Superglobals Management
 
 ### Introduction
 
-[SG](https://github.com/yulonghu/sg) Full name [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), References all variables available in global scope, Extends the humanized management ability of PHP global variables.
+[SG](https://github.com/yulonghu/sg) Full name [Superglobals](http://php.net/manual/en/language.variables.superglobals.php), References all variables available in global scope, SG has extended a new way to manage PHP superglobals variables, Make the management of PHP superglobals variables simple and unified.
 
-These superglobal variables are: $GLOBALS, $_SERVER, $_GET, $_POST, $_FILES, $_COOKIE, $_SESSION, $_REQUEST, $_ENV.
-
-Use SG can make complex code to simple, Turn on Auto-trim can save a lot of PHP code, So improve development efficiency.
+These superglobal variables managed by SG are: $GLOBALS, $_SERVER, $_GET, $_POST, $_FILES, $_COOKIE, $_SESSION, $_REQUEST, $_ENV.
 
 ### Features
 - Simple, Fast, Lightweight
-- Access global variable zero-copy
-- Strip whitespace with [PHP trim](http://php.net/manual/en/function.trim.php)
-- Solve problems with PHP undefined series (Undefined variable, Undefined offset)
+- Access PHP superglobals zero-copy, Synchronously update PHP Superglobals variables
+- Support string values automatically filters spaces [PHP trim](http://php.net/manual/en/function.trim.php)
+- Solve the problem of undefined series when using PHP Superglobals variables (Undefined variable, Undefined offset)
+- Replace the PHP array dimension with a decimal point
 
 ## Install
 ### Supported Version
@@ -64,31 +63,30 @@ sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 
 ### Superglobals <=> SG HashMap
-- Identifier __CONTAIN contains methods get, set, has, del
-- When management sessions (HashKey = n), First call the function session_start()
+- When management PHP sessions (MapKey = n), First call the function session_start()
 
-|PHP Predefined Superglobals|SG HashKey| Method Example|
+|PHP Predefined Superglobals|SG MapKey| Method Example|
 | ------ | ------ | ------ |
-|$GLOBALS|NIL|sg::all()|
-|$_SERVER|s|sg::__CONTAIN('s')|
-|$_GET|g|sg::__CONTAIN('g')|
-|$_POST|p|sg::__CONTAIN('p')|
-|$_FILES|f|sg::__CONTAIN('f')|
-|$_COOKIE|c|sg::__CONTAIN('c')|
-|$_SESSION|n|sg::__CONTAIN('n')|
-|$_REQUEST|r|sg::__CONTAIN('r')|
-|$_ENV|e|sg::__CONTAIN('e')|
+|$GLOBALS|-|sg::all()|
+|$_SERVER|s|sg::get/set/has/del('s')|
+|$_GET|g|sg::get/set/has/del('g')|
+|$_POST|p|sg::get/set/has/del('p')|
+|$_FILES|f|sg::get/set/has/del('f')|
+|$_COOKIE|c|sg::get/set/has/del('c')|
+|$_SESSION|n|sg::get/set/has/del('n')|
+|$_REQUEST|r|sg::get/set/has/del('r')|
+|$_ENV|e|sg::get/set/has/del('e')|
 
 ### Usage
 
 #### bool sg::set(string $key, mixed $value)
 ```php
 <?php
-var_dump(sg::set('test', 'test apple'));
-var_dump(sg::set('user.0.0', 'user 0 apple'));
-var_dump(sg::set('user.0.1', 'user 1 apple'));
-var_dump(sg::set('user.a.a', 'user a apple'));
-var_dump(sg::set('user.a.b', 'user b apple'));
+var_dump(sg::set('test', 'test apple')); // Same as $GLOBALS['test'] = 'test apple'
+var_dump(sg::set('user.0.0', 'user 0 apple')); // Same as $GLOBALS['test'][0][0]
+var_dump(sg::set('user.0.1', 'user 1 apple')); // Same as $GLOBALS['test'][0][1]
+var_dump(sg::set('user.a.a', 'user a apple')); // Same as $GLOBALS['test']['a']'a']
+var_dump(sg::set('user.a.b', 'user b apple')); // Same as $GLOBALS['test']['a']'b']
 ```
 The above example will output:
 ```txt
@@ -102,7 +100,7 @@ bool(true)
 #### mixed sg::get(string $key [, mixed $default_value = null])
 ```php
 <?php
-var_dump(sg::get('test', 'test apple'));
+var_dump(sg::get('test', 'test apple')); 
 var_dump(sg::get('user');
 var_dump(sg::get('not_found', 'def');
 var_dump(sg::get('user.1.2.3.4'));

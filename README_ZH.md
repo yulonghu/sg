@@ -7,17 +7,16 @@
 
 ### 介绍
 
-[SG](https://github.com/yulonghu/sg) 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，引用全局作用域中可用的全部变量，扩展了PHP全局变量人性化的管理能力。
+[SG](https://github.com/yulonghu/sg) 全称 [Superglobals](http://php.net/manual/en/language.variables.superglobals.php)，引用全局作用域中可用的全部变量。SG扩展了一种全新的PHP超全局变量管理方式，使得PHP超全局变量的管理变得简单化、统一化。
 
-这些全局变量是：$GLOBALS，$_SERVER，$_GET，$_POST，$_FILES，$_COOKIE，$_SESSION，$_REQUEST，$_ENV。
-
-使用SG类，复杂代码变得简单，变得优雅，开启自动过滤还能减少代码量，进而提高我们的开发效率。
+SG管理的这些超全局变量是：$GLOBALS，$_SERVER，$_GET，$_POST，$_FILES，$_COOKIE，$_SESSION，$_REQUEST，$_ENV。
 
 ### 亮点功能
 - 简单，快速，轻量
-- 零拷贝访问全局变量
-- 支持自动过滤前后空格[PHP trim](http://php.net/manual/en/function.trim.php)
-- 解决操作PHP全局变量时出现未定义系列的问题 (Undefined variable, Undefined offset)
+- 零拷贝访问PHP超全局变量，同步更新PHP超全局变量
+- 支持字符串自动过滤前后空格[PHP trim](http://php.net/manual/en/function.trim.php)
+- 解决使用PHP超全局变量时出现未定义系列的问题 (Undefined variable, Undefined offset)
+- 以小数点替换PHP数组维数
 
 ## 安装
 ### PHP版本支持包括
@@ -63,37 +62,36 @@ sg.enable = On/Off ; Default Off
 sg.auto_trim = On/Off ; Strip whitespace with PHP trim
 ```
 
-### 超全局变量 <=> SG MAP表
-- 标识符__CONTAIN包含方法有 get，set，has，del
-- 管理会话时(HashKey = n), 请先调用函数 session_start()
+### 超全局变量 与 SG MAP表对应关系
+- 管理PHP会话时(MapKey = n), 请先调用函数 session_start()
 
-|PHP默认超全局变量|对应SG参数的缩写| Method Example|
+|PHP默认超全局变量|SG MapKey(关键字缩写)|SG使用|
 | ------ | ------ | ------ |
 |$GLOBALS|无|sg::all()|
-|$_SERVER|s|sg::__CONTAIN('s')|
-|$_GET|g|sg::__CONTAIN('g')|
-|$_POST|p|sg::__CONTAIN('p')|
-|$_FILES|f|sg::__CONTAIN('f')|
-|$_COOKIE|c|sg::__CONTAIN('c')|
-|$_SESSION|n|sg::__CONTAIN('n')|
-|$_REQUEST|r|sg::__CONTAIN('r')|
-|$_ENV|e|sg::__CONTAIN('e')|
+|$_SERVER|s|sg::get/set/has/del('s')|
+|$_GET|g|sg::get/set/has/del('g')|
+|$_POST|p|sg::get/set/has/del('p')|
+|$_FILES|f|sg::get/set/has/del('f')|
+|$_COOKIE|c|sg::get/set/has/del('c')|
+|$_SESSION|n|sg::get/set/has/del('n')|
+|$_REQUEST|r|sg::get/set/has/del('r')|
+|$_ENV|e|sg::get/set/has/del('e')|
 
 ### 方法的使用
 
 #### bool sg::set(string $key, mixed $value)
 
-设置全局作用域变量，找不到$key则新增，否则更新值。
+设置全局作用域变量，找不到$key则新增，否则更新其值。
 
 返回值: TRUE 成功，FALSE 失败
 
 ```php
 <?php
-var_dump(sg::set('test', 'test apple'));
-var_dump(sg::set('user.0.0', 'user 0 apple'));
-var_dump(sg::set('user.0.1', 'user 1 apple'));
-var_dump(sg::set('user.a.a', 'user a apple'));
-var_dump(sg::set('user.a.b', 'user b apple'));
+var_dump(sg::set('test', 'test apple')); // 等同于 $GLOBALS['test'] = 'test apple'
+var_dump(sg::set('user.0.0', 'user 0 apple')); // 等同于 $GLOBALS['test'][0][0]
+var_dump(sg::set('user.0.1', 'user 1 apple')); // 等同于 $GLOBALS['test'][0][1]
+var_dump(sg::set('user.a.a', 'user a apple')); // 等同于 $GLOBALS['test']['a']['a']
+var_dump(sg::set('user.a.b', 'user b apple')); // 等同于 $GLOBALS['test']['a']['b']
 ```
 以上例子输出的结果:
 ```txt
@@ -110,7 +108,7 @@ bool(true)
 
 ```php
 <?php
-var_dump(sg::get('test', 'test apple'));
+var_dump(sg::get('test', 'test apple')); // 读取一个全局变量test
 var_dump(sg::get('user');
 var_dump(sg::get('not_found', 'def');
 var_dump(sg::get('user.1.2.3.4'));
@@ -238,15 +236,15 @@ array(2) {
 |$key = $_REQUEST['key'] ?? null; $key = trim($key);|$key = sg::get('r.key');|
 |$key = $_ENV['key'] ?? null; $key = trim($key);|$key = sg::get('e.key');|
 
-通过以上的整理，可以得出一个结论，传统取值方式容易出错，如果数组维度越深，代码复杂度会直线上升。
+通过以上的整理可以得出结论，如果PHP超全局变量数组维度越深，代码复杂度会直线上升。
 
-使用SG，这些情况都变得很简单。更新、删除方式类同。
+使用SG，这些情况都变得很简单。更新、删除方式类同，这里就不一一举例了。
 
 ### sg.auto_trim
 
 演示自动过滤前后空格的例子, 支持两种方式开启自动过滤。
 
-为了获得最佳性能，如果满足trim条件, sg将改变原始值。避免每次取值时重复做trim操作。
+为了获得最佳性能，如果满足trim条件, SG将改变原始值。避免每次取值时重复做trim操作。
 
 ```php
 <?php
