@@ -485,7 +485,6 @@ static const zend_function_entry sg_methods[] = {
 static PHP_MINIT_FUNCTION(sg)
 {
     ZEND_INIT_MODULE_GLOBALS(sg, php_sg_init_globals, NULL);
-
     REGISTER_INI_ENTRIES();
 
     zend_class_entry ce;
@@ -497,57 +496,22 @@ static PHP_MINIT_FUNCTION(sg)
 #endif
 
     if (SG_G(enable)) {
-        zval preg;
+        zval preg; int i = 0;
+        const char *k[] = {"g", "p", "c", "s", "f", "n", "r", "e"};
+        const char *v[] = {"_GET", "_POST", "_COOKIE", "_SERVER", "_FILES", "_SESSION", "_REQUEST", "_ENV"};
         zend_hash_init(&sg_map, 16, NULL, (dtor_func_t) sg_zval_dtor, 1);
 #if PHP_VERSION_ID >= 70000
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_GET"), 1));
-        zend_hash_str_add_new(&sg_map, "g", sizeof("g") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_POST"), 1));
-        zend_hash_str_add_new(&sg_map, "p", sizeof("p") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_COOKIE"), 1));
-        zend_hash_str_add_new(&sg_map, "c", sizeof("c") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_SERVER"), 1));
-        zend_hash_str_add_new(&sg_map, "s", sizeof("s") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_FILES"), 1));
-        zend_hash_str_add_new(&sg_map, "f", sizeof("f") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_SESSION"), 1));
-        zend_hash_str_add_new(&sg_map, "n", sizeof("n") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_REQUEST"), 1));
-        zend_hash_str_add_new(&sg_map, "r", sizeof("r") - 1, &preg);
-
-        ZVAL_NEW_STR(&preg, zend_string_init(ZEND_STRL("_ENV"), 1));
-        zend_hash_str_add_new(&sg_map, "e", sizeof("e") - 1, &preg);
+        while(i < 8) {
+            ZVAL_NEW_STR(&preg, zend_string_init(v[i], strlen(v[i]), 1));
+            zend_hash_str_add_new(&sg_map, k[i], strlen(k[i]), &preg);
+            i++;
+        }
 #else
-
-        SG_ZVAL_PSTRING(&preg, "_GET");
-        zend_hash_add(&sg_map, "g", sizeof("g"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_POST");
-        zend_hash_add(&sg_map, "p", sizeof("p"), (void *)&preg, sizeof(zval), NULL);
-        
-        SG_ZVAL_PSTRING(&preg, "_COOKIE");
-        zend_hash_add(&sg_map, "c", sizeof("c"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_SERVER");
-        zend_hash_add(&sg_map, "s", sizeof("s"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_FILES");
-        zend_hash_add(&sg_map, "f", sizeof("f"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_SESSION");
-        zend_hash_add(&sg_map, "n", sizeof("n"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_REQUEST");
-        zend_hash_add(&sg_map, "r", sizeof("r"), (void *)&preg, sizeof(zval), NULL);
-
-        SG_ZVAL_PSTRING(&preg, "_ENV");
-        zend_hash_add(&sg_map, "e", sizeof("e"), (void *)&preg, sizeof(zval), NULL);
+        while(i < 8) {
+            SG_ZVAL_PSTRING(&preg, v[i]);
+            zend_hash_add(&sg_map, k[i], strlen(k[i]) + 1, (void *)&preg, sizeof(zval), NULL);
+            i++;
+        }
 #endif
     }
 
