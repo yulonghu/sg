@@ -229,7 +229,6 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
                     if (Z_TYPE_P(pzval) == IS_ARRAY) {
                         ht = Z_ARRVAL_P(pzval);
                     } else {
-                        zval_dtor(pzval);
                         goto NEW_ARR;
                     }
                 } else {
@@ -245,7 +244,6 @@ NEW_ARR:
                     if (Z_TYPE_PP(pzval) == IS_ARRAY) {
                         ht = Z_ARRVAL_PP(pzval);
                     } else {
-                        zval_dtor(*pzval);
                         goto NEW_ARR;
                     }
                 } else {
