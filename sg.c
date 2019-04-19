@@ -436,7 +436,7 @@ static PHP_METHOD(sg, del)
     char *key = NULL, *new_key = NULL;
     int argc = 0, i = 0, ret = SUCCESS;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "+", &args, &argc) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &args, &argc) == FAILURE) {
         return;
     }
 
