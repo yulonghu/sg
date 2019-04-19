@@ -22,7 +22,7 @@
 extern zend_module_entry sg_module_entry;
 #define phpext_sg_ptr &sg_module_entry
 
-#define PHP_SG_VERSION "2.0.0"
+#define PHP_SG_VERSION "2.0.1"
 #define PHP_SG_AUTHOR  "Jiapeng Fan"
 
 #ifdef PHP_WIN32

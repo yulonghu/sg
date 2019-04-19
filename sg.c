@@ -420,28 +420,53 @@ static PHP_METHOD(sg, has)
 }
 /* }}} */
 
-/** {{{ proto bool Sg::del(string $key)
+/** {{{ proto bool Sg::del(string $key [, mixed $... ])
  */
 static PHP_METHOD(sg, del)
 {
     SG_CHECK_ENABLE();
 
+#if PHP_VERSION_ID >= 70000
+    zval *args = NULL;
+    zend_string *skey = NULL;
+#else
+    zval ***args = NULL;
+#endif
+    size_t key_len = 0, new_key_len = 0;
     char *key = NULL, *new_key = NULL;
-    size_t key_len = 0, new_key_len = 0, ret = 0;
-    
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len) == FAILURE) {
+    int argc = 0, i = 0, ret = SUCCESS;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "+", &args, &argc) == FAILURE) {
         return;
     }
 
-    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
-    ret = sg_strtok_del(new_key, new_key_len TSRMLS_CC);
-    SG_NEW_KEY_EFREE();
-
-    if (ret == SUCCESS) {
-        RETURN_TRUE;
+    for (; i < argc; i++) {
+#if PHP_VERSION_ID >= 70000
+        skey = zval_get_string(&args[i]);
+        key = ZSTR_VAL(skey);
+        key_len = ZSTR_LEN(skey);
+#else
+        convert_to_string_ex(args[i]);
+        key = Z_STRVAL_PP(args[i]);
+        key_len = Z_STRLEN_PP(args[i]);
+#endif
+        new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+        ret = sg_strtok_del(new_key, new_key_len TSRMLS_CC);
+        SG_NEW_KEY_EFREE();
+#if PHP_VERSION_ID >= 70000
+        zend_string_release(skey);
+#endif
     }
 
-    RETURN_FALSE;
+    if (argc == 1) {
+        if (ret == SUCCESS) {
+            RETURN_TRUE;
+        } else {
+            RETURN_FALSE;
+        }
+    }
+
+    RETURN_TRUE;
 }
 /* }}} */
 

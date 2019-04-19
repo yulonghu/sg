@@ -53,7 +53,7 @@ array sg::all(void)
 mixed sg::get(string $key [, mixed $default_value = null])
 bool sg::set(string $key, mixed $value)
 bool sg::has(string $key)
-bool sg::del(string $key)
+bool sg::del(string $key [, mixed $... ])
 ```
 
 ### 支持的INI配置项
@@ -153,9 +153,11 @@ bool(true)
 bool(false)
 ```
 
-#### bool sg::del(string $key)
+#### bool sg::del(string $key [, mixed $... ])
 
 删除全局作用域中变量$key
+
+注意: 批量删除时，有且只有一个成功结果
 
 返回值: TRUE 成功，FALSE 失败
 

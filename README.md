@@ -53,7 +53,7 @@ array sg::all(void)
 mixed sg::get(string $key [, mixed $default_value = null])
 bool sg::set(string $key, mixed $value)
 bool sg::has(string $key)
-bool sg::del(string $key)
+bool sg::del(string $key [, mixed $... ])
 ```
 
 ### Inis
@@ -140,7 +140,7 @@ bool(true)
 bool(false)
 ```
 
-#### bool sg::del(string $key)
+#### bool sg::del(string $key [, mixed $... ])
 ```php
 <?php
 var_dump(sg::del('test'));

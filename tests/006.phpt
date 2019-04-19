@@ -27,6 +27,10 @@ var_dump(sg::del('undefined'));
 var_dump(sg::del('undefined.0.1'));
 var_dump(sg::del('undefined.0.1'));
 
+echo "------------------batch del\n";
+var_dump(sg::del('undefined', 'undefined.0.1', 'undefined', 'undefined.0.1'));
+var_dump(sg::del('user.1.2.3', 'user.1.2'));
+var_dump(sg::get('user'));
 ?>
 --EXPECT--
 ------------------set
@@ -52,4 +56,12 @@ array(1) {
 bool(false)
 bool(false)
 bool(false)
+------------------batch del
+bool(true)
+bool(true)
+array(1) {
+  [1]=>
+  array(0) {
+  }
+}
 
