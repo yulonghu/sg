@@ -175,7 +175,7 @@ static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
             method = name;
 #endif
             zend_error(E_WARNING, "%s() expects the argument (%s) to be a valid callback",
-                    get_active_function_name(), method ? method : "unknown");
+                    get_active_function_name(TSRMLS_C), method ? method : "unknown");
 #if PHP_VERSION_ID >= 70000
             zend_string_release(name);
 #else
