@@ -771,9 +771,9 @@ static PHP_MINIT_FUNCTION(sg)
 #endif
 
 #if PHP_VERSION_ID >= 70000
-        zend_set_user_opcode_handler(ZEND_BIND_GLOBAL, php7_sg_bind_globals_handler TSRMLS_CC);
+        zend_set_user_opcode_handler(ZEND_BIND_GLOBAL, php7_sg_bind_globals_handler);
 #else
-        zend_set_user_opcode_handler(ZEND_ASSIGN_REF, php5_sg_bind_globals_handler TSRMLS_CC);
+        zend_set_user_opcode_handler(ZEND_ASSIGN_REF, php5_sg_bind_globals_handler);
 #endif
     }
 
