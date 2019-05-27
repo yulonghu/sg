@@ -316,6 +316,9 @@ static int sg_strtok_set(char *key, size_t key_len, zval *value TSRMLS_DC) /* {{
                     }
                     if (Z_TYPE_P(pzval) == IS_ARRAY) {
                         ht = Z_ARRVAL_P(pzval);
+#if PHP_VERSION_ID >= 70300
+                        HT_FLAGS(ht) |= HASH_FLAG_ALLOW_COW_VIOLATION;
+#endif
                     } else {
                         goto NEW_ARR;
                     }
@@ -596,7 +599,11 @@ static int php7_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
     size_t key_len = 0;
 
     do {
+#if PHP_VERSION_ID >= 70300
+        var = RT_CONSTANT(opline, opline->op2);
+#else
         var = EX_CONSTANT(opline->op2);
+#endif 
         key = Z_STRVAL_P(var);
         key_len = Z_STRLEN_P(var);
 
@@ -646,15 +653,28 @@ static int php7_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
 ADD_SYMBOL_VAR:
                     pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
                     if (pzval) {
+                        zend_reference *ref = NULL;
                         pzval = sg_get_callable(pzval TSRMLS_CC);
                         if (UNEXPECTED(!Z_ISREF_P(pzval))) {
+#if PHP_VERSION_ID >= 70300
+                            ZVAL_MAKE_REF_EX(pzval, 2);
+                            ref = Z_REF_P(pzval);
+                            ZVAL_REF(value, ref);
+#else
                             ZVAL_NEW_REF(pzval, pzval);
-                            zend_reference *ref = Z_REF_P(pzval);
+                            ref = Z_REF_P(pzval);
                             GC_REFCOUNT(ref)++;
                             ZVAL_REF(value, ref);
+#endif
                         } else {
+#if PHP_VERSION_ID >= 70300
+                            ref = Z_REF_P(pzval);
+                            GC_ADDREF(ref);
+                            ZVAL_COPY_VALUE(value, pzval);
+#else
                             GC_REFCOUNT(Z_REF_P(pzval))++;
                             ZVAL_COPY_VALUE(value, pzval);
+#endif
                         }
                     }
                 }
