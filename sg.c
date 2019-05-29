@@ -698,8 +698,6 @@ static int php5_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
             break;
         }
 
-        zend_free_op free_op1, free_op2;
-        zval **variable_ptr_ptr;
         const char *key = NULL;
         int key_len = 0;
 
