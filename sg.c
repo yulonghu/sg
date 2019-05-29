@@ -201,7 +201,6 @@ static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
         /* Callable */
 #if PHP_VERSION_ID >= 70000
         if (call_user_function_ex(CG(function_table), NULL, &fname, &retval, 1, pzval, 1, NULL TSRMLS_CC) == SUCCESS) {
-            zval_ptr_dtor(&fname);
             zval_dtor(pzval);
             ZVAL_COPY_VALUE(pzval, &retval);
         }
