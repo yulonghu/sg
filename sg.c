@@ -181,7 +181,7 @@ static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
 #else
             efree(name);
 #endif
-            return;
+            return pzval;
         }
 
 #if PHP_VERSION_ID >= 70000
