@@ -39,7 +39,6 @@ extern zend_module_entry sg_module_entry;
 
 ZEND_BEGIN_MODULE_GLOBALS(sg)
     zend_bool enable;
-    zend_bool auto_trim;
     HashTable *global_http;
     zend_bool global_level;
     char *func_name;
