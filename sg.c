@@ -270,6 +270,9 @@ static zval *sg_strtok_get(char *key, size_t key_len TSRMLS_DC) /* {{{ */
     }
 
 #if PHP_VERSION_ID >= 70000
+	if (pzval && Z_TYPE_P(pzval) == IS_INDIRECT) {
+		pzval = Z_INDIRECT_P(pzval);
+	}
     return pzval;
 #else
     return *pzval;
