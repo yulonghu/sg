@@ -4,7 +4,6 @@ Check for sg.auto_trim
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--
 sg.enable = 1
-sg.auto_trim = 1
 --FILE--
 <?php
 $key = 'test';

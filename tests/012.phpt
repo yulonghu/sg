@@ -4,7 +4,6 @@ Check for global $var refcount
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--
 sg.enable = 1
-sg.auto_trim = 1
 --FILE--
 <?php
 
