@@ -2,9 +2,33 @@
 
 [![Build Status](https://travis-ci.org/yulonghu/sg.svg?branch=master)](https://travis-ci.org/yulonghu/sg)
 
-A simple PHP syntax sugar extension
+[中文文档](https://github.com/yulonghu/sg/blob/master/README_ZH.md) | English Document
 
-[中文文档](https://github.com/yulonghu/sg/blob/master/README_ZH.md)
+### Table of Contents
+
+* [Introduction](#introduction)
+* [Features](#features)
+* [Install](#install)
+    * [Supported Version](#supported-version)
+    * [DownLoad](#download)
+    * [Compile SG in Linux](#compile-sg-in-linux)
+        * [Add the follow information to your php.ini](#add-the-follow-information-to-your-phpini)
+* [Help Manual](#help-manual)
+    * [API](#api)
+        * [global $variable](#global-variable)
+        * [Static Methods](#static-methods)
+    * [Inis(php.ini)](#inisphpini)
+    * [Hash Map](#hash-map)
+    * [Example](#example)
+        * [global $variable](#global-variable-1)
+            * [sg.global_level = 1](#sgglobal_level--1)
+            * [sg.global_level = 0](#sgglobal_level--0)
+            * [sg.func_name](#sgfunc_name)
+        * [Static Methods](#static-methods-1)
+            * [sg::get/set/has/del()](#sggetsethasdel)
+            * [array sg::all(void)](#array-sgallvoid)
+            * [sg.func_name](#sgfunc_name-1)
+* [License](#license)
 
 ### Introduction
 
@@ -21,7 +45,7 @@ Very important point: it is very simple.
 - Solve the problem of undefined series when using PHP Superglobals variables (Undefined variable, Undefined offset)
 - Use static function method, Replace the PHP array dimension with a decimal point
 - Use global statement, Replace the PHP array dimension with a underline
-- Support for global key the option configuration, Default level one lookup
+- Support for global $variable the option configuration, Default level one lookup
 
 ## Install
 ### Supported Version
@@ -52,7 +76,15 @@ Restart the php-fpm.
 
 ## Help Manual
 
-### Methods
+### API
+
+#### global $variable
+
+```php
+global $g_key, $p_key, $c_key, $s_key, $f_key, $n_key, $e_key, $r_key
+```
+
+#### Static Methods
 ```php
 array sg::all(void)
 mixed sg::get(string $key [, mixed $default_value = null])
@@ -83,99 +115,172 @@ bool sg::del(string $key [, mixed $... ])
 |$_REQUEST|r|global $r|sg::get/set/has/del('r')|
 |$_ENV|e|global $e|sg::get/set/has/del('e')|
 
-### Usage
+### Example
 
-#### bool sg::set(string $key, mixed $value)
+#### global $variable
+##### sg.global_level = 1
+
 ```php
 <?php
-var_dump(sg::set('test', 'test apple')); // Same as $GLOBALS['test'] = 'test apple'
-var_dump(sg::set('user.0.0', 'user 0 apple')); // Same as $GLOBALS['test'][0][0]
-var_dump(sg::set('user.0.1', 'user 1 apple')); // Same as $GLOBALS['test'][0][1]
-var_dump(sg::set('user.a.a', 'user a apple')); // Same as $GLOBALS['test']['a']'a']
-var_dump(sg::set('user.a.b', 'user b apple')); // Same as $GLOBALS['test']['a']'b']
-```
 
-The above example will output:
-```txt
-bool(true)
-bool(true)
-bool(true)
-bool(true)
-bool(true)
-```
+$_GET['key'] = 'GET_test_key';
 
-#### mixed sg::get(string $key [, mixed $default_value = null])
-```php
-<?php
-var_dump(sg::get('test', 'test apple')); 
-var_dump(sg::get('user');
-var_dump(sg::get('not_found', 'def');
-var_dump(sg::get('user.1.2.3.4'));
-```
-The above example will output:
-```txt
-string(10) "test apple"
-array(2) {
-  [0]=>
-  array(2) {
-    [0]=>
-    string(12) "user 0 apple"
-    [1]=>
-    string(12) "user 1 apple"
-  }
-  ["a"]=>
-  array(2) {
-    ["a"]=>
-    string(12) "user a apple"
-    ["b"]=>
-    string(12) "user b apple"
-  }
+function testGlobal()
+{
+    global $g_key;
+
+    var_dump($g_key);
+
+    $g_key = 'NEW_GET_test_key';
 }
-string(3) "def"
-NULL
+
+testGlobal();
+
+var_dump(sg::get('g.key'));
+var_dump($GLOBALS['g_key']);
+var_dump($g_key);
+var_dump($_GET['key']);
 ```
 
-#### bool sg::has(string $key)
+The above example will output:
+
+```txt
+string(12) "GET_test_key"
+string(16) "NEW_GET_test_key"
+string(16) "NEW_GET_test_key"
+string(16) "NEW_GET_test_key"
+string(16) "NEW_GET_test_key"
+```
+
+##### sg.global_level = 0
+
 ```php
 <?php
-var_dump(sg::has('test'));
-var_dump(sg::has('not_found'));
+
+$_GET['key']['key1']['key2'] = 'GET_test_key';
+
+function testGlobal()
+{
+    global $g_key_key1_key2;
+}
+
+testGlobal();
+
+var_dump(sg::get('g.key.key1.key2'));
+var_dump($GLOBALS['g_key_key1_key2']);
+var_dump($g_key_key1_key2);
+var_dump($_GET['key']['key1']['key2']);
 ```
+
 The above example will output:
+
+```txt
+string(12) "GET_test_key"
+string(12) "GET_test_key"
+string(12) "GET_test_key"
+string(12) "GET_test_key"
 ```
+##### sg.func_name
+
+```php
+<?php
+
+ini_set('sg.func_name', 'decryptTest');
+
+$_POST['key'] = 'IEEgQmFuYW5hIA==';
+
+function decryptTest($data)
+{
+    return trim(base64_decode($data));
+}
+
+var_dump($p_key);
+```
+
+The above example will output:
+
+```txt
+string(8) "A Banana"
+```
+
+#### Static Methods
+##### sg::get/set/has/del()
+
+```php
+<?php
+
+$key = 'test';
+$val = 'A Banana';
+
+echo "------------------start\n";
+var_dump(sg::get($key));
+var_dump(sg::get($key, 'def'));
+var_dump(sg::has($key));
+
+echo "------------------set\n";
+var_dump(sg::set($key, $val));
+
+echo "------------------get\n";
+var_dump(sg::get($key));
+var_dump(sg::get($key, 'def'));
+var_dump(sg::has($key));
+
+echo "------------------del\n";
+var_dump(sg::del($key));
+
+echo "------------------get\n";
+var_dump(sg::get($key));
+var_dump(sg::has($key));
+```
+
+The above example will output:
+
+```txt
+------------------start
+NULL
+string(3) "def"
+bool(false)
+------------------set
 bool(true)
+------------------get
+string(8) "A banana"
+string(8) "A banana"
+bool(true)
+------------------del
+bool(true)
+------------------get
+NULL
 bool(false)
 ```
 
-#### bool sg::del(string $key [, mixed $... ])
+##### array sg::all(void)
+Same as [$GLOBALS](https://www.php.net/manual/zh/reserved.variables.globals.php)
+
+##### sg.func_name
 ```php
 <?php
-var_dump(sg::del('test'));
-var_dump(sg::del('user.0.1'));
-var_dump(sg::get('user');
-```
-The above example will output:
-```
-bool(true)
-bool(true)
-array(2) {
-  [0]=>
-  array(1) {
-    [0]=>
-    string(12) "user 0 apple"
-  }
-  ["a"]=>
-  array(2) {
-    ["a"]=>
-    string(12) "user a apple"
-    ["b"]=>
-    string(12) "user b apple"
-  }
+
+ini_set('sg.func_name', 'decryptTest');
+
+function decryptTest($data)
+{
+    return trim(base64_decode($data));
 }
+
+function encryptTest($data) 
+{
+    return base64_encode(trim($data));
+}
+
+sg::set('user', encryptTest(' A Banana '));
+var_dump(sg::get('user'));
 ```
 
-### array sg::all(void)
-The same result as [$GLOBALS](https://www.php.net/manual/zh/reserved.variables.globals.php)
+The above example will output:
+
+```txt
+string(8) "A Banana"
+```
 
 ## License
 SG is open source software under the [PHP License v3.01](http://www.php.net/license/3_01.txt)
