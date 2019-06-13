@@ -41,7 +41,7 @@ Very important point: it is very simple.
 ### Features
 - Simple, Fast, Lightweight
 - Access PHP superglobals zero-copy, Synchronously update PHP Superglobals variables
-- Support for custom function, Default call [PHP trim](http://php.net/manual/en/function.trim.php)
+- Support custom call function name, Default call [PHP trim](http://php.net/manual/en/function.trim.php)
 - Solve the problem of undefined series when using PHP Superglobals variables (Undefined variable, Undefined offset)
 - Use static function method, Replace the PHP array dimension with a decimal point
 - Use global statement, Replace the PHP array dimension with a underline
@@ -193,6 +193,8 @@ function decryptTest($data)
 {
     return trim(base64_decode($data));
 }
+
+global $p_key;
 
 var_dump($p_key);
 ```

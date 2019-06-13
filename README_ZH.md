@@ -205,6 +205,8 @@ function decryptTest($data)
     return trim(base64_decode($data));
 }
 
+global $p_key;
+
 var_dump($p_key);
 ```
 

@@ -27,4 +27,5 @@ modules/
 run-tests.php
 sg.la
 sg.lo
+configure.ac
 
