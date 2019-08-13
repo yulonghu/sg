@@ -23,9 +23,12 @@
 #include "php.h"
 #include "php_ini.h"
 #include "SAPI.h"
+
+#include "main/php_streams.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 #include "Zend/zend_interfaces.h"
+#include "ext/standard/file.h"
 #include "php_sg.h"
 
 static HashTable sg_map;
@@ -66,6 +69,14 @@ ZEND_BEGIN_ARG_INFO_EX(sg_get_arginfo, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, default_value)
 ZEND_END_ARG_INFO()
+ZEND_BEGIN_ARG_INFO_EX(sg_getraw_arginfo, 0, 0, 0)
+    ZEND_ARG_INFO(0, default_value)
+    ZEND_ARG_INFO(0, maxlen)
+ZEND_END_ARG_INFO()
+ZEND_BEGIN_ARG_INFO_EX(sg_getcache_arginfo, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, default_value)
+ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(sg_has_arginfo, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
@@ -95,7 +106,16 @@ static void php_sg_init_globals(zend_sg_globals *sg_globals)
 }
 /* }}} */
 
-static void sg_zval_dtor(zval *pvalue) /* {{{ */
+static int _sg_del_cache(char *key, size_t key_len) /* {{{ */
+{
+    if (SG_G(get_cache) && zend_hash_num_elements(SG_G(get_cache))) {
+        return zend_hash_str_del(SG_G(get_cache), key, key_len);
+    }
+    return FAILURE;
+}
+/* }}} */
+
+static void _sg_zval_dtor(zval *pvalue) /* {{{ */
 {
 #if PHP_VERSION_ID >= 70000
     zend_string_release(Z_STR_P(pvalue));
@@ -105,7 +125,7 @@ static void sg_zval_dtor(zval *pvalue) /* {{{ */
 }
 /* }}} */
 
-static size_t sg_str_convert_self(char *key, size_t key_len, char **new_key TSRMLS_DC) /* {{{ */
+static size_t _sg_str_convert_self(char *key, size_t key_len, char **new_key TSRMLS_DC) /* {{{ */
 {
     size_t need_key_len = key_len;
     const char *p = (key + 1);
@@ -138,7 +158,7 @@ static size_t sg_str_convert_self(char *key, size_t key_len, char **new_key TSRM
 }
 /* }}} */
 
-static zval *sg_get_trim_data(zval *pzval TSRMLS_DC) /* {{{ */
+static void _sg_trim_data(zval *pzval TSRMLS_DC) /* {{{ */
 {
     if (Z_TYPE_P(pzval) == IS_STRING) {
 #if PHP_VERSION_ID >= 70000
@@ -151,13 +171,13 @@ static zval *sg_get_trim_data(zval *pzval TSRMLS_DC) /* {{{ */
         ZVAL_STRING(pzval, tmp, 0);
 #endif
     }
-
-    return pzval;
 }
 /* }}} */
 
-static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
+static int _sg_change_callable(zval *pzval TSRMLS_DC) /* {{{ */
 {
+    int ret = FAILURE;
+
     if (SG_G(func_name)[0]) {
         zval retval, fname;
         char *method = NULL;
@@ -178,10 +198,11 @@ static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
                     get_active_function_name(TSRMLS_C), method ? method : "unknown");
 #if PHP_VERSION_ID >= 70000
             zend_string_release(name);
+            zval_ptr_dtor(&fname);
 #else
             efree(name);
 #endif
-            return pzval;
+            return FAILURE;
         }
 
 #if PHP_VERSION_ID >= 70000
@@ -195,25 +216,26 @@ static zval *sg_get_callable(zval *pzval TSRMLS_DC) /* {{{ */
 #if PHP_VERSION_ID >= 70000
             zval_ptr_dtor(&fname);
 #endif
-            return sg_get_trim_data(pzval TSRMLS_CC);
+            (void)_sg_trim_data(pzval TSRMLS_CC);
+            return SUCCESS;
         }
 
         /* Callable */
 #if PHP_VERSION_ID >= 70000
-        if (call_user_function_ex(CG(function_table), NULL, &fname, &retval, 1, pzval, 1, NULL TSRMLS_CC) == SUCCESS) {
+        if ((ret = call_user_function_ex(CG(function_table), NULL, &fname, &retval, 1, pzval, 1, NULL TSRMLS_CC)) == SUCCESS) {
             zval_dtor(pzval);
             ZVAL_COPY_VALUE(pzval, &retval);
         }
         zval_ptr_dtor(&fname);
 #else
-        if (call_user_function(EG(function_table), NULL, &fname, &retval, 1, &pzval TSRMLS_CC) == SUCCESS) {
+        if ((ret = call_user_function(EG(function_table), NULL, &fname, &retval, 1, &pzval TSRMLS_CC)) == SUCCESS) {
             zval_dtor(pzval);
             ZVAL_COPY_VALUE(pzval, &retval);
         }
 #endif
     }
 
-    return pzval;
+    return ret;
 }
 /* }}} */
 
@@ -425,34 +447,167 @@ static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
+static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *default_value, zend_bool is_cache) /* {{{ */
+{
+    zval *retval = *return_value;
+
+    /* Find a cache data by key */
+    if (is_cache && SG_G(func_name)[0] && SG_G(get_cache)) {
+        zval *find = zend_hash_str_find(SG_G(get_cache), key, key_len);
+        if (find) {
+            ZVAL_COPY(retval, find);
+            return;
+        }
+    }
+
+    char *new_key = NULL;
+    size_t new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    zval *pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
+    SG_NEW_KEY_EFREE();
+
+    if (pzval) {
+        ZVAL_COPY(retval, pzval);
+        int ret = _sg_change_callable(retval TSRMLS_CC);
+
+        /* Insert Cache */
+        if (is_cache && SG_G(func_name)[0] && ret == SUCCESS) {
+            if (!SG_G(get_cache)) {
+                ALLOC_HASHTABLE(SG_G(get_cache));
+                zend_hash_init(SG_G(get_cache), 8, NULL, ZVAL_PTR_DTOR, 0);
+            }
+            Z_TRY_ADDREF_P(retval);
+            zend_hash_str_add(SG_G(get_cache), key, key_len, retval);
+        }
+        return;
+    }
+
+    if (default_value) {
+        ZVAL_COPY(retval, default_value);
+    } else {
+        ZVAL_NULL(retval);
+    }
+}
+/* }}} */
+
 /** {{{ proto mixed Sg::get(string $key [, mixed $default_value = null])
  */
 static PHP_METHOD(sg, get)
 {
     SG_CHECK_ENABLE();
 
-    zval *default_value = NULL, *pzval = NULL;
-    char *key = NULL, *new_key = NULL;
-    size_t key_len = 0, new_key_len = 0;
+    zval *default_value = NULL;
+    char *key = NULL;
+    size_t key_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &default_value) == FAILURE) {
         return;
     }
 
-    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
-    pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
-    SG_NEW_KEY_EFREE();
+    (void)sg_get_common(key, key_len, &return_value, default_value, 0);
+}
+/* }}} */
 
-    if (pzval) {
-        pzval = sg_get_callable(pzval TSRMLS_CC);
-        RETURN_ZVAL(pzval, 1, 0);
+/** {{{ proto mixed Sg::getCache(string $key [, mixed $default_value = null])
+ */
+static PHP_METHOD(sg, getCache)
+{
+    SG_CHECK_ENABLE();
+
+    zval *default_value = NULL;
+    char *key = NULL;
+    size_t key_len = 0;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &default_value) == FAILURE) {
+        return;
+    }
+   
+    (void)sg_get_common(key, key_len, &return_value, default_value, 1);
+}
+/* }}} */
+
+static php_stream *_sg_stream_open_wrapper_ex(char *path, int persistent STREAMS_DC) /* {{{ */
+{
+    php_stream_wrapper *wrapper = NULL;
+    php_stream *stream = NULL;
+    php_stream_context *context = NULL;
+    char *copy_of_path = NULL;
+
+    context = FG(default_context) ? FG(default_context) : (FG(default_context) = php_stream_context_alloc());
+    HashTable *wrapper_hash = _php_stream_get_url_stream_wrappers_hash();
+
+    if (NULL == (wrapper = zend_hash_str_find_ptr(wrapper_hash, path, 3))) {
+        return NULL;
     }
 
-    if (default_value) {
-        RETURN_ZVAL(default_value, 1, 0);
+    if (wrapper) {
+        if (!wrapper->wops->stream_opener) {
+            php_error_docref(NULL, E_WARNING, "%s", "wrapper does not support stream open");
+        } else {
+            stream = wrapper->wops->stream_opener(wrapper, path, "rb", 0,
+                    NULL, context STREAMS_REL_CC);
+        }
     }
 
-    RETURN_NULL();
+    if (stream) {
+        stream->wrapper = wrapper;
+        if (stream->orig_path) {
+            pefree(stream->orig_path, persistent);
+        }
+        copy_of_path = pestrdup(path, persistent);
+        stream->orig_path = copy_of_path;
+
+#if ZEND_DEBUG
+        stream->open_filename = __zend_orig_filename ? __zend_orig_filename : __zend_filename;
+        stream->open_lineno = __zend_orig_lineno ? __zend_orig_lineno : __zend_lineno;
+#endif
+    }
+
+    if (wrapper && FG(wrapper_errors)) {
+        zend_hash_str_del(FG(wrapper_errors), (const char*)&wrapper, sizeof(wrapper));
+        wrapper = NULL;
+    }
+
+    return stream;
+}
+/* }}} */
+
+/** {{{ proto mixed Sg::getRaw([mixed $default_value = null [, int $maxlen]])
+ */
+static PHP_METHOD(sg, getRaw)
+{
+    SG_CHECK_ENABLE();
+
+    zval *default_value = NULL;
+	zend_long maxlen = (ssize_t) PHP_STREAM_COPY_ALL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|zl", &default_value, &maxlen) == FAILURE) {
+        return;
+    }
+
+    char *path = "php://input";
+    int persistent = REPORT_ERRORS & STREAM_OPEN_PERSISTENT;
+
+    php_stream *stream = _sg_stream_open_wrapper_ex(path, persistent STREAMS_CC);
+    if (!stream) {
+        RETURN_FALSE;
+    }
+
+    if (maxlen > INT_MAX) {
+        php_error_docref(NULL, E_WARNING, "maxlen truncated from %pd to %d bytes", maxlen, INT_MAX);
+        maxlen = INT_MAX;
+    }
+
+    zend_string *contents = NULL;
+    if ((contents = php_stream_copy_to_mem(stream, maxlen, 0)) != NULL) {
+        ZVAL_STR(return_value, contents);
+        (void)_sg_change_callable(return_value TSRMLS_CC);
+    } else if (default_value) {
+        ZVAL_COPY(return_value, default_value);
+    } else {
+        ZVAL_EMPTY_STRING(return_value);
+    }
+
+	php_stream_close(stream);
 }
 /* }}} */
 
@@ -470,7 +625,9 @@ static PHP_METHOD(sg, set)
         return;
     }
 
-    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    _sg_del_cache(key, key_len);
+
+    new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
     ret = sg_strtok_set(new_key, new_key_len, value TSRMLS_CC);
     SG_NEW_KEY_EFREE();
 
@@ -495,7 +652,7 @@ static PHP_METHOD(sg, has)
         return;
     }
 
-    new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+    new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
     pvalue = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
     SG_NEW_KEY_EFREE();
 
@@ -533,7 +690,9 @@ static PHP_METHOD(sg, del)
         key = Z_STRVAL_PP(args[i]);
         key_len = Z_STRLEN_PP(args[i]);
 #endif
-        new_key_len = sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
+        _sg_del_cache(key, key_len);
+
+        new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
         ret = sg_strtok_del(new_key, new_key_len TSRMLS_CC);
         SG_NEW_KEY_EFREE();
 #if PHP_VERSION_ID >= 70000
@@ -575,10 +734,33 @@ static PHP_METHOD(sg, all)
 }
 /* }}} */
 
+/** {{{ proto bool Sg::getCacheAll(void)
+ */
+static PHP_METHOD(sg, getCacheAll)
+{
+    SG_CHECK_ENABLE();
+
+    if (SG_G(get_cache)) {
+#if PHP_VERSION_ID >= 70000
+        ZVAL_ARR(return_value, SG_G(get_cache));
+        Z_TRY_ADDREF_P(return_value);
+#else
+        Z_TYPE_P(return_value) = IS_ARRAY;
+        Z_ARRVAL_P(return_value) = SG_G(get_cache);
+#endif
+    } else {
+        RETURN_NULL();
+    }
+}
+/* }}} */
+
 /* {{{ sg_methods[]
  */
 static const zend_function_entry sg_methods[] = {
     PHP_ME(sg, get, sg_get_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(sg, getCache, sg_getcache_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(sg, getCacheAll, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(sg, getRaw, sg_getraw_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, set, sg_set_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, has, sg_has_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, del, sg_del_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
@@ -635,7 +817,7 @@ static int php7_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
                 p++;
             }
 
-            new_key_len = sg_str_convert_self(n_key, key_len, &new_key TSRMLS_CC);
+            new_key_len = _sg_str_convert_self(n_key, key_len, &new_key TSRMLS_CC);
             /* The Key Not found in SG_MAP, new_key address same as n_key */
             if (new_key_len == key_len) {
                 efree(n_key);
@@ -656,7 +838,7 @@ ADD_SYMBOL_VAR:
                     pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
                     if (pzval) {
                         zend_reference *ref = NULL;
-                        pzval = sg_get_callable(pzval TSRMLS_CC);
+                        (void)_sg_change_callable(pzval TSRMLS_CC);
                         if (UNEXPECTED(!Z_ISREF_P(pzval))) {
 #if PHP_VERSION_ID >= 70300
                             ZVAL_MAKE_REF_EX(pzval, 2);
@@ -727,7 +909,7 @@ static int php5_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
                 p++;
             }
 
-            new_key_len = sg_str_convert_self(n_key, key_len, &new_key TSRMLS_CC);
+            new_key_len = _sg_str_convert_self(n_key, key_len, &new_key TSRMLS_CC);
             if (new_key_len == key_len) {
                 efree(n_key);
                 break;
@@ -737,7 +919,7 @@ static int php5_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
                     && (Z_TYPE_PP(value) == IS_NULL)) {
                 pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
                 if (pzval) {
-                    pzval = sg_get_callable(pzval TSRMLS_CC);
+                    (void)sg_get_callable(pzval, NULL TSRMLS_CC);
                     if (UNEXPECTED(!Z_ISREF_P(pzval))) {
                         Z_SET_ISREF_P(pzval);
                     }
@@ -775,7 +957,7 @@ static PHP_MINIT_FUNCTION(sg)
         zval preg; int i = 0;
         const char *k[] = {"g", "p", "c", "s", "f", "n", "r", "e"};
         const char *v[] = {"_GET", "_POST", "_COOKIE", "_SERVER", "_FILES", "_SESSION", "_REQUEST", "_ENV"};
-        zend_hash_init(&sg_map, 16, NULL, (dtor_func_t) sg_zval_dtor, 1);
+        zend_hash_init(&sg_map, 16, NULL, (dtor_func_t) _sg_zval_dtor, 1);
 #if PHP_VERSION_ID >= 70000
         while(i < 8) {
             ZVAL_NEW_STR(&preg, zend_string_init(v[i], strlen(v[i]), 1));
@@ -842,6 +1024,12 @@ static PHP_RINIT_FUNCTION(sg)
  */
 static PHP_RSHUTDOWN_FUNCTION(sg)
 {
+    if (SG_G(get_cache)) {
+        zend_hash_destroy(SG_G(get_cache));
+        FREE_HASHTABLE(SG_G(get_cache));
+        SG_G(get_cache) = NULL;
+    }
+
     return SUCCESS;
 }
 /* }}} */
@@ -886,7 +1074,8 @@ ZEND_GET_MODULE(sg)
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
+ * vim600: et sw=4 ts=4 fdm=marker
+ * vim<600: et sw=4 ts=4
  */

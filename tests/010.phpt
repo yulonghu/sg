@@ -5,10 +5,10 @@ Check for Global $var to change
 --INI--
 sg.enable = 1
 sg.global_level = 1
+--GET--
+key=GET_test_key
 --FILE--
 <?php
-
-$_GET['key'] = 'GET_test_key';
 
 function testGlobal()
 {

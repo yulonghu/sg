@@ -22,7 +22,7 @@
 extern zend_module_entry sg_module_entry;
 #define phpext_sg_ptr &sg_module_entry
 
-#define PHP_SG_VERSION "3.0.0"
+#define PHP_SG_VERSION "3.0.1"
 #define PHP_SG_AUTHOR  "Jiapeng Fan"
 
 #ifdef PHP_WIN32
@@ -42,6 +42,7 @@ ZEND_BEGIN_MODULE_GLOBALS(sg)
     HashTable *global_http;
     zend_bool global_level;
     char *func_name;
+    HashTable *get_cache;
 ZEND_END_MODULE_GLOBALS(sg)
 
 extern ZEND_DECLARE_MODULE_GLOBALS(sg);

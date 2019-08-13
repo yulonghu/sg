@@ -34,7 +34,7 @@ var_dump(sg::set('others.', 100));
 var_dump(sg::get('others'));
 
 echo "------------------IS_TMP_VAR\n";
-var_dump(sg::set('var', 'hello' . time()));
+var_dump(sg::set('var', ' hello' . time()));
 var_dump(sg::set('var.abc.def', "hello_word" . time()));
 
 sg::all();

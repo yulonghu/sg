@@ -1,5 +1,5 @@
 --TEST--
-Check for Sg Associative array
+Check for Sg Associative Array
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--

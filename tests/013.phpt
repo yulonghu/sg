@@ -5,10 +5,10 @@ Check for sg.global_level
 --INI--
 sg.enable = 1
 sg.global_level = 0
+--GET--
+key[key1][key2]=GET_test_key
 --FILE--
 <?php
-
-$_GET['key']['key1']['key2'] = 'GET_test_key';
 
 function testGlobal()
 {
