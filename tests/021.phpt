@@ -1,5 +1,5 @@
 --TEST--
-Check for sg::getRaw() auto call Example::decrypt
+Check for sg::getRaw(void) auto call Example::decrypt
 --SKIPIF--
 <?php if (!extension_loaded("sg")) print "skip"; ?>
 --INI--

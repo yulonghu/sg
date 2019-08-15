@@ -38,7 +38,6 @@ var_dump(sg::set('var', ' hello' . time()));
 var_dump(sg::set('var.abc.def', "hello_word" . time()));
 
 sg::all();
-
 ?>
 --EXPECT--
 ------------------start

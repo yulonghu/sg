@@ -61,6 +61,7 @@ zend_class_entry *sg_ce;
         Z_STRVAL_P(z) = zend_strndup(s, Z_STRLEN_P(z)); \
         Z_TYPE_P(z) = IS_STRING;    \
         Z_SET_REFCOUNT_P(z, 0);     \
+        Z_UNSET_ISREF_P(z);         \
     } while(0) /* }}} */ 
 
 /* {{{ ARG_INFO
@@ -109,7 +110,11 @@ static void php_sg_init_globals(zend_sg_globals *sg_globals)
 static int _sg_del_cache(char *key, size_t key_len) /* {{{ */
 {
     if (SG_G(get_cache) && zend_hash_num_elements(SG_G(get_cache))) {
+#if PHP_VERSION_ID >= 70000
         return zend_hash_str_del(SG_G(get_cache), key, key_len);
+#else
+        return zend_symtable_del(SG_G(get_cache), key, key_len + 1);
+#endif
     }
     return FAILURE;
 }
@@ -453,11 +458,19 @@ static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *
 
     /* Find a cache data by key */
     if (is_cache && SG_G(func_name)[0] && SG_G(get_cache)) {
-        zval *find = zend_hash_str_find(SG_G(get_cache), key, key_len);
-        if (find) {
+#if PHP_VERSION_ID >= 70000
+        zval *find = NULL;
+        if ((find = zend_hash_str_find(SG_G(get_cache), key, key_len))) {
             ZVAL_COPY(retval, find);
             return;
         }
+#else
+        zval **find = NULL;
+        if (zend_symtable_find(SG_G(get_cache), key, key_len + 1, (void **) &find) == SUCCESS) {
+            ZVAL_ZVAL(retval, *find, 1, 0);
+            return;
+        }
+#endif
     }
 
     char *new_key = NULL;
@@ -466,7 +479,11 @@ static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *
     SG_NEW_KEY_EFREE();
 
     if (pzval) {
+#if PHP_VERSION_ID >= 70000
         ZVAL_COPY(retval, pzval);
+#else
+        ZVAL_ZVAL(retval, pzval, 1, 0);
+#endif
         int ret = _sg_change_callable(retval TSRMLS_CC);
 
         /* Insert Cache */
@@ -475,14 +492,26 @@ static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *
                 ALLOC_HASHTABLE(SG_G(get_cache));
                 zend_hash_init(SG_G(get_cache), 8, NULL, ZVAL_PTR_DTOR, 0);
             }
+#if PHP_VERSION_ID >= 70000
             Z_TRY_ADDREF_P(retval);
             zend_hash_str_add(SG_G(get_cache), key, key_len, retval);
+#else
+            zval *reg = NULL;
+            MAKE_STD_ZVAL(reg);
+            *reg = *retval;
+            zval_copy_ctor(reg);
+            zend_hash_add(SG_G(get_cache), key, key_len + 1, (void **) &reg, sizeof(zval *), NULL);
+#endif
         }
         return;
     }
 
     if (default_value) {
+#if PHP_VERSION_ID >= 70000
         ZVAL_COPY(retval, default_value);
+#else
+        ZVAL_ZVAL(retval, default_value, 1, 0);
+#endif
     } else {
         ZVAL_NULL(retval);
     }
@@ -520,31 +549,41 @@ static PHP_METHOD(sg, getCache)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &key, &key_len, &default_value) == FAILURE) {
         return;
     }
-   
+
     (void)sg_get_common(key, key_len, &return_value, default_value, 1);
 }
 /* }}} */
 
-static php_stream *_sg_stream_open_wrapper_ex(char *path, int persistent STREAMS_DC) /* {{{ */
+static php_stream *_sg_stream_open_wrapper_ex(char *path, int persistent STREAMS_DC TSRMLS_DC) /* {{{ */
 {
-    php_stream_wrapper *wrapper = NULL;
+    php_stream_wrapper *wrapper = NULL, **wrapperpp = NULL;
     php_stream *stream = NULL;
     php_stream_context *context = NULL;
     char *copy_of_path = NULL;
 
-    context = FG(default_context) ? FG(default_context) : (FG(default_context) = php_stream_context_alloc());
-    HashTable *wrapper_hash = _php_stream_get_url_stream_wrappers_hash();
+    context = FG(default_context) ? FG(default_context) : (FG(default_context) = php_stream_context_alloc(TSRMLS_C));
+    HashTable *wrapper_hash = _php_stream_get_url_stream_wrappers_hash(TSRMLS_C);
 
+#if PHP_VERSION_ID >= 70000
     if (NULL == (wrapper = zend_hash_str_find_ptr(wrapper_hash, path, 3))) {
         return NULL;
     }
+#else
+    char *tmp = estrndup(path, 3);
+    if (FAILURE == zend_hash_find(wrapper_hash, tmp, 4, (void**)&wrapperpp)) {
+        efree(tmp);
+        return NULL;
+    }
+    efree(tmp);
+    wrapper = *wrapperpp;
+#endif
 
     if (wrapper) {
         if (!wrapper->wops->stream_opener) {
-            php_error_docref(NULL, E_WARNING, "%s", "wrapper does not support stream open");
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "%s", "wrapper does not support stream open");
         } else {
             stream = wrapper->wops->stream_opener(wrapper, path, "rb", 0,
-                    NULL, context STREAMS_REL_CC);
+                    NULL, context STREAMS_REL_CC TSRMLS_CC);
         }
     }
 
@@ -562,10 +601,25 @@ static php_stream *_sg_stream_open_wrapper_ex(char *path, int persistent STREAMS
 #endif
     }
 
+#if PHP_VERSION_ID >=  70000
     if (wrapper && FG(wrapper_errors)) {
         zend_hash_str_del(FG(wrapper_errors), (const char*)&wrapper, sizeof(wrapper));
         wrapper = NULL;
     }
+#else
+    if (wrapper) {
+        int i;
+
+        for (i = 0; i < wrapper->err_count; i++) {
+            efree(wrapper->err_stack[i]);
+        }
+        if (wrapper->err_stack) {
+            efree(wrapper->err_stack);
+        }
+        wrapper->err_stack = NULL;
+        wrapper->err_count = 0;
+    }
+#endif
 
     return stream;
 }
@@ -578,7 +632,11 @@ static PHP_METHOD(sg, getRaw)
     SG_CHECK_ENABLE();
 
     zval *default_value = NULL;
+#if PHP_VERSION_ID >=  70000
 	zend_long maxlen = (ssize_t) PHP_STREAM_COPY_ALL;
+#else
+	long maxlen = PHP_STREAM_COPY_ALL;
+#endif
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|zl", &default_value, &maxlen) == FAILURE) {
         return;
@@ -587,7 +645,7 @@ static PHP_METHOD(sg, getRaw)
     char *path = "php://input";
     int persistent = REPORT_ERRORS & STREAM_OPEN_PERSISTENT;
 
-    php_stream *stream = _sg_stream_open_wrapper_ex(path, persistent STREAMS_CC);
+    php_stream *stream = _sg_stream_open_wrapper_ex(path, persistent STREAMS_CC TSRMLS_CC);
     if (!stream) {
         RETURN_FALSE;
     }
@@ -597,12 +655,30 @@ static PHP_METHOD(sg, getRaw)
         maxlen = INT_MAX;
     }
 
+    ZVAL_NULL(return_value);
+
+#if PHP_VERSION_ID >= 70000
     zend_string *contents = NULL;
     if ((contents = php_stream_copy_to_mem(stream, maxlen, 0)) != NULL) {
         ZVAL_STR(return_value, contents);
+    }
+#else
+    char *contents = NULL;
+    int len = 0;
+
+    if ((len = php_stream_copy_to_mem(stream, &contents, maxlen, 0)) > 0) {
+        RETVAL_STRINGL(contents, len, 0);
+    }
+#endif
+    
+    if (Z_TYPE_P(return_value) != IS_NULL) {
         (void)_sg_change_callable(return_value TSRMLS_CC);
     } else if (default_value) {
+#if PHP_VERSION_ID >= 70000
         ZVAL_COPY(return_value, default_value);
+#else
+        RETVAL_ZVAL(default_value, 1, 0);
+#endif
     } else {
         ZVAL_EMPTY_STRING(return_value);
     }
@@ -745,8 +821,9 @@ static PHP_METHOD(sg, getCacheAll)
         ZVAL_ARR(return_value, SG_G(get_cache));
         Z_TRY_ADDREF_P(return_value);
 #else
-        Z_TYPE_P(return_value) = IS_ARRAY;
-        Z_ARRVAL_P(return_value) = SG_G(get_cache);
+        zval *tmp = NULL;
+        array_init(return_value);
+        zend_hash_copy(Z_ARRVAL_P(return_value), SG_G(get_cache), (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 #endif
     } else {
         RETURN_NULL();
@@ -919,7 +996,7 @@ static int php5_sg_bind_globals_handler(zend_execute_data *execute_data TSRMLS_D
                     && (Z_TYPE_PP(value) == IS_NULL)) {
                 pzval = sg_strtok_get(new_key, new_key_len TSRMLS_CC);
                 if (pzval) {
-                    (void)sg_get_callable(pzval, NULL TSRMLS_CC);
+                    (void)_sg_change_callable(pzval TSRMLS_CC);
                     if (UNEXPECTED(!Z_ISREF_P(pzval))) {
                         Z_SET_ISREF_P(pzval);
                     }
