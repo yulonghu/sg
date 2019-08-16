@@ -7,9 +7,9 @@ sg.enable = 1
 --FILE--
 <?php
 
-ini_set('sg.func_name',  'test::check');
+//ini_set('sg.func_name',  'test::check');
 
-$_GET['user'] = base64_encode('Hello World');
+//$_GET['user'] = base64_encode('Hello World');
 
 class test {
     public static function check($data) {
@@ -22,5 +22,11 @@ class test {
 
 //var_dump(sg::get('found', 'xxxxxyyyyyyyyyyyyy'. time()));
 
+$str0 = "hello";
+$str1 = "world";
+
+$data = $str0 . $str1;
+
+sg::get('key', $data);
 ?>
 --EXPECT--

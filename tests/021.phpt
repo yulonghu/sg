@@ -11,6 +11,10 @@ aHR0cCUzQSUyRiUyRnd3dy5ib3gzLmNu
 
 ini_set('sg.func_name',  'Example::decrypt');
 
+if (PHP_VERSION_ID <= 50609) {
+    ini_set('always_populate_raw_post_data', -1);
+}
+
 class Example {
     public static function decrypt($data) {
         return urldecode(base64_decode($data));

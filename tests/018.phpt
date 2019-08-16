@@ -7,7 +7,11 @@ sg.enable = 1
 --FILE--
 <?php
 
-sg::set('user', 'php');
+$a = 'hello';
+$b = 'world';
+$c = $a . $b;
+
+sg::set('user', $c);
 sg::set('list.sinfo', 'info');
 sg::set('list.finfo', 0.123456);
 
@@ -33,6 +37,6 @@ array(2) {
   ["finfo"]=>
   float(0.123456)
 }
-string(3) "php"
+string(10) "helloworld"
 int(1509697)
 

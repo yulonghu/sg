@@ -107,7 +107,7 @@ static void php_sg_init_globals(zend_sg_globals *sg_globals)
 }
 /* }}} */
 
-static int _sg_del_cache(char *key, size_t key_len) /* {{{ */
+static int _sg_del_cache(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 {
     if (SG_G(get_cache) && zend_hash_num_elements(SG_G(get_cache))) {
 #if PHP_VERSION_ID >= 70000
@@ -452,7 +452,7 @@ static int sg_strtok_del(char *key, size_t key_len TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *default_value, zend_bool is_cache) /* {{{ */
+static void sg_get_common(char *key, size_t key_len, zval **return_value, zval *default_value, zend_bool is_cache TSRMLS_DC) /* {{{ */
 {
     zval *retval = *return_value;
 
@@ -532,7 +532,7 @@ static PHP_METHOD(sg, get)
         return;
     }
 
-    (void)sg_get_common(key, key_len, &return_value, default_value, 0);
+    (void)sg_get_common(key, key_len, &return_value, default_value, 0 TSRMLS_CC);
 }
 /* }}} */
 
@@ -550,7 +550,7 @@ static PHP_METHOD(sg, getCache)
         return;
     }
 
-    (void)sg_get_common(key, key_len, &return_value, default_value, 1);
+    (void)sg_get_common(key, key_len, &return_value, default_value, 1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -601,9 +601,13 @@ static php_stream *_sg_stream_open_wrapper_ex(char *path, int persistent STREAMS
 #endif
     }
 
-#if PHP_VERSION_ID >=  70000
+#if PHP_VERSION_ID >= 50500
     if (wrapper && FG(wrapper_errors)) {
+#if PHP_VERSION_ID >= 70000
         zend_hash_str_del(FG(wrapper_errors), (const char*)&wrapper, sizeof(wrapper));
+#else
+        zend_hash_del(FG(wrapper_errors), (const char*)&wrapper, sizeof wrapper);
+#endif
         wrapper = NULL;
     }
 #else
@@ -651,7 +655,7 @@ static PHP_METHOD(sg, getRaw)
     }
 
     if (maxlen > INT_MAX) {
-        php_error_docref(NULL, E_WARNING, "maxlen truncated from %pd to %d bytes", maxlen, INT_MAX);
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "maxlen truncated from %pd to %d bytes", maxlen, INT_MAX);
         maxlen = INT_MAX;
     }
 
@@ -701,7 +705,7 @@ static PHP_METHOD(sg, set)
         return;
     }
 
-    _sg_del_cache(key, key_len);
+    _sg_del_cache(key, key_len TSRMLS_CC);
 
     new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
     ret = sg_strtok_set(new_key, new_key_len, value TSRMLS_CC);
@@ -766,7 +770,7 @@ static PHP_METHOD(sg, del)
         key = Z_STRVAL_PP(args[i]);
         key_len = Z_STRLEN_PP(args[i]);
 #endif
-        _sg_del_cache(key, key_len);
+        _sg_del_cache(key, key_len TSRMLS_CC);
 
         new_key_len = _sg_str_convert_self(key, key_len, &new_key TSRMLS_CC);
         ret = sg_strtok_del(new_key, new_key_len TSRMLS_CC);
