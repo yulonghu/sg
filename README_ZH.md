@@ -36,6 +36,8 @@
 
 这些超全局变量有：$_SERVER，$_GET，$_POST，$_FILES，$_COOKIE，$_SESSION，$_REQUEST，$_ENV。
 
+SG v3.0.1 支持POST请求，原始数据流的快速读取。请参考 [php://input](https://www.php.net/manual/zh/wrappers.php.php#wrappers.php.input)
+
 当然了，也可以应用到自定义变量场景。
 
 非常重要的一点：它很简单！
@@ -48,6 +50,7 @@
 - 采用函数调用方式时，以小数点代替PHP数组维度
 - 采用global声明方式时，以下划线代替PHP数组维度
 - 支持可配置的global $variable查找深度，默认一级查找
+- 支持POST请求，原始数据流的快速读取
 
 ## 安装
 ### 支持PHP版本
@@ -102,6 +105,13 @@ bool sg::has(string $key)
 // 删除全局作用域中变量$key; 返回值: TRUE 成功，FALSE 失败
 // 注意: 批量删除时，有且只有一个成功结果
 bool sg::del(string $key [, mixed $... ])
+
+// 读取POST请求情况下，原始数据
+// 读取速度快于 file_get_contents('php://input');
+mixed sg::getRaw([mixed $default_value = null [, int $maxlen]])
+
+// 读取全局作用域变量, 存储到Cache，请求结束时自动释放Cache
+mixed sg::getCache(string $key [, mixed $default_value = null])
 ```
 
 ### 配置项(php.ini)

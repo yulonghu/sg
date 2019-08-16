@@ -36,6 +36,8 @@
 
 These superglobal variables managed by SG are: $_SERVER, $_GET, $_POST, $_FILES, $_COOKIE, $_SESSION, $_REQUEST, $_ENV.
 
+The version v3.0.1 support read raw data from the request body. In the case of POST requests.
+
 Very important point: it is very simple.
 
 ### Features
@@ -46,6 +48,7 @@ Very important point: it is very simple.
 - Use static function method, Replace the PHP array dimension with a decimal point
 - Use global statement, Replace the PHP array dimension with a underline
 - Support for global $variable the option configuration, Default level one lookup
+- Support for read raw data from the POST requests
 
 ## Install
 ### Supported Version
@@ -91,6 +94,8 @@ mixed sg::get(string $key [, mixed $default_value = null])
 bool sg::set(string $key, mixed $value)
 bool sg::has(string $key)
 bool sg::del(string $key [, mixed $... ])
+mixed sg::getRaw([mixed $default_value = null [, int $maxlen]])
+mixed sg::getCache(string $key [, mixed $default_value = null])
 ```
 
 ### Inis(php.ini)
