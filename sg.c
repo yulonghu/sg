@@ -835,6 +835,20 @@ static PHP_METHOD(sg, getCacheAll)
 }
 /* }}} */
 
+/** {{{ proto bool Sg::version(void)
+ */
+static PHP_METHOD(sg, version)
+{
+    SG_CHECK_ENABLE();
+
+#if PHP_VERSION_ID >= 70000
+    RETURN_STRINGL(PHP_SG_VERSION, strlen(PHP_SG_VERSION));
+#else
+    RETURN_STRINGL(PHP_SG_VERSION, strlen(PHP_SG_VERSION), 1);
+#endif
+}
+/* }}} */
+
 /* {{{ sg_methods[]
  */
 static const zend_function_entry sg_methods[] = {
@@ -846,6 +860,7 @@ static const zend_function_entry sg_methods[] = {
     PHP_ME(sg, has, sg_has_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, del, sg_del_arginfo, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(sg, all, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+    PHP_ME(sg, version, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 #if PHP_VERSION_ID >= 54000
     PHP_FE_END
 #else

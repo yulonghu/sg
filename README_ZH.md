@@ -107,7 +107,7 @@ bool sg::has(string $key)
 bool sg::del(string $key [, mixed $... ])
 
 // 读取POST请求情况下，原始数据
-// 读取速度快于 file_get_contents('php://input');
+// 读取速度快于(30%) file_get_contents('php://input');
 mixed sg::getRaw([mixed $default_value = null [, int $maxlen]])
 
 // 读取全局作用域变量, 存储到Cache，请求结束时自动释放Cache
